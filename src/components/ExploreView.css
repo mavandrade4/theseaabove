@@ -1,0 +1,100 @@
+/* Overlay container */
+.explore-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 30px 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  text-align: center;
+}
+
+/* Label inside overlay */
+
+.explore-label {
+  font-weight: bold;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* Button styles inside overlay */
+.explore-overlay button {
+  margin-top: 15px;
+  font-size: 18px;
+  padding: 12px 24px;
+  cursor: pointer;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+  width: 100%; /* Full width for better responsiveness */
+}
+
+/* Button hover effect */
+.explore-overlay button:hover {
+  background: #333;
+}
+
+/* Optional: Adding a slight animation for the overlay visibility */
+.explore-overlay.fade-in {
+  animation: fadeIn 1s ease-out;
+}
+
+.no-timeline .tick,
+.no-timeline .domain,
+.no-timeline .axis-label {
+  display: none;
+}
+
+.legend-label {
+  font-family: sans-serif;
+  font-weight: 500;
+}
+
+.controls {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px;
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.controls button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #ddd;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.controls button.active,
+.controls button:hover {
+  background: #007bff;
+  color: white;
+}
+
+.tooltip {
+  z-index: 9999;
+  pointer-events: none;
+  position: absolute;
+  background: white;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}

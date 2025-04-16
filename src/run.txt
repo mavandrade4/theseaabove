@@ -1,0 +1,4 @@
+DATABASE FOFLDER: exec -it database psql -U local -d database
+
+app_v1: node server.js
+        npm start
