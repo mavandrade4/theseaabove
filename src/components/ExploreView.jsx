@@ -1,5 +1,4 @@
 import React from "react";
-import "./ExploreView.css"; // Make sure to create and include this CSS file
 
 const ExploreView = ({ onGroupChange, selectedGroup }) => {
   const groupOptions = ["year", "country", "type", "subtype"];

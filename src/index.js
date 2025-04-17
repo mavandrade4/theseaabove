@@ -1,13 +1,45 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import App from './pages/App';
 import reportWebVitals from './reportWebVitals';
+import {
+  createBrowserRouter,
+  RouterProvider,
+} from "react-router";
+
+import BubbleChart2 from './pages/BubbleChart';
+import Timeline from './pages/Timeline';
+
+import Root from './root';
+
+const router = createBrowserRouter([
+  {
+    path: "/home",
+    element: <Root />,
+    children: [
+      {
+        index: true,
+        element: <App />
+      },
+      {
+        path: "/timeline",
+        element: <Timeline />,
+      },
+      {
+        path: "/bubbleChart",
+        element: <BubbleChart2 />,
+      },
+    ]
+  },
+ 
+]);
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </React.StrictMode>
 );
 

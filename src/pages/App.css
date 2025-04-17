@@ -1,0 +1,96 @@
+.App {
+  text-align: center;
+  background: #e5d6b5;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.explore-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.explore-button {
+  background: transparent;
+  color: black;
+  font-weight: 700;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  border: none;
+  font-family: "Courier New", Courier, monospace;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  box-shadow: none;
+  font-size: 1.2rem;
+  position: relative;
+}
+
+.explore-button:hover {
+  color: black;
+  text-shadow: 4px -4px 0px white;
+}
+
+.explore-button.selected {
+  color: white;
+}
+
+.explore-button.selected:hover {
+  color: white;
+  text-shadow: 4px -4px 0px black;
+}
+
+
+.legend-label {
+  font-family: sans-serif;
+  font-weight: 500;
+}
+
+
+.tooltip {
+  z-index: 9999;
+  pointer-events: none;
+  position: absolute;
+  background: white;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
