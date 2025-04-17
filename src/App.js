@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import * as d3 from "d3";
 import Timeline from "./components/Timeline";
 import ExploreView from "./components/ExploreView";
+import BubbleChart2 from "./components/BubbleChart2";
 import "./App.css";
 
 const App = () => {
@@ -9,6 +10,8 @@ const App = () => {
   const [spaceDecayData, setSpaceDecayData] = useState([]);
   const [groupBy, setGroupBy] = useState("year");
   const [buttonsVisible, setButtonsVisible] = useState(false);
+
+  const [view, setView] = useState("bubble");
 
   useEffect(() => {
     d3.csv("space_decay.csv")
@@ -97,6 +100,12 @@ const App = () => {
   return (
     <div className="App">
       <h1>Satellite vs. Debris</h1>
+      
+      {view === "bubble" ? (
+        <BubbleChart2 data={combinedData} />
+      ) : (
+        <Timeline data={combinedData} groupBy="type" />
+      )}
       {buttonsVisible && (
         <ExploreView
           data={combinedData}

@@ -8,7 +8,6 @@ const BarChart = ({ data }) => {
   useEffect(() => {
     if (!data || data.length === 0) return;
 
-    // Clear previous render
     d3.select(ref.current).selectAll("*").remove();
 
     const margin = { top: 30, right: 30, bottom: 70, left: 60 },
