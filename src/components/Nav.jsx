@@ -1,13 +1,17 @@
-import { useEffect, useRef } from "react";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import '../App.css'
 
-const Nav = () => {
-  const ref = useRef();
-
-  useEffect(() => {
-    
-  }, []);
-
-  return <div id="nav" ref={ref} />;
+const NavBar = () => {  
+    return (
+      <nav className="navbar">
+        <div className="navbar-links">
+          <Link to="/">HOME</Link>
+          <Link to="/timeline">TIMELINE</Link>
+          <Link to="/bubbleChart">GROUPS</Link>
+        </div>
+      </nav>
+    );
 };
 
-export default Nav;
+export default NavBar;

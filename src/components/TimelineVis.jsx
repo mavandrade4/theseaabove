@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-const Timeline = ({ data, onAnimationEnd, groupBy }) => {
+const TimelineVis = ({ data }) => {
+  const groupBy = "year";
   const svgRef = useRef();
-  const isAnimated = useRef(false);
 
   useEffect(() => {
     if (!data || data.length === 0) return;
@@ -136,13 +136,7 @@ const Timeline = ({ data, onAnimationEnd, groupBy }) => {
       .attr("cy", (d) => d.y)
       .attr("fill", "none")
       .attr("stroke", "red")
-      .attr("stroke-width", 1.5)
-      .on("end", () => {
-        if (!isAnimated.current) {
-          isAnimated.current = true;
-          onAnimationEnd && onAnimationEnd();
-        }
-      });
+      .attr("stroke-width", 1.5);
 
     const axis = d3.axisLeft(yScale).ticks(sortedGroups.length).tickFormat((d, i) => sortedGroups[i]);
     const axisGroup = svg
@@ -189,9 +183,9 @@ const Timeline = ({ data, onAnimationEnd, groupBy }) => {
       .on("mouseout", () => {
         tooltip.style("display", "none");
       });
-  }, [data, onAnimationEnd, groupBy]);
+  }, [data]);
 
   return <svg ref={svgRef}></svg>;
 };
 
-export default Timeline;
+export default TimelineVis;
