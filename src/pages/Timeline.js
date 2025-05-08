@@ -1,12 +1,12 @@
 import React from "react";
-import TimelineVis from "../components/TimelineVis";
-import Data from "../components/Data";
+import TimelineVis from "./components/TimelineVis";
+import './Timeline.css';
 
 const Timeline = () => {
 
   return (
     <div>
-      <TimelineVis data={Data()}/>
+      <TimelineVis/>
     </div>
   );
 };

@@ -1,7 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useContext } from "react";
+import { dataContext } from "../../context/dataContext";
 import * as d3 from "d3";
+import '../Timeline.css';
 
-const TimelineVis = ({ data }) => {
+const TimelineVis = () => {
+  const data = useContext(dataContext);
   const groupBy = "year";
   const svgRef = useRef();
 
@@ -9,7 +12,7 @@ const TimelineVis = ({ data }) => {
     if (!data || data.length === 0) return;
 
     const width = window.innerWidth;
-    const height = window.innerHeight;
+    const height = window.innerHeight * 2;
     const margin = { top: 50, right: 50, bottom: 50, left: 50 };
 
     const svg = d3
@@ -25,7 +28,7 @@ const TimelineVis = ({ data }) => {
     const yScale = d3
       .scaleLinear()
       .domain([0, sortedGroups.length - 1])
-      .range([height - margin.bottom, margin.top]);
+      .range([height - margin.bottom, margin.top - 500]);
 
     const countries = Array.from(new Set(data.map((d) => d.country || "unknown")));
     const colorScale = d3
@@ -49,7 +52,7 @@ const TimelineVis = ({ data }) => {
 
       const maxSpread = (width - margin.left - margin.right) / 2;
 
-      const createPositions = (arr, direction = "center") => {
+      const createPositions = (arr, direction = "center", yearOffset = 0) => {
         const count = arr.length;
         const spacing = maxSpread / maxCount;
 
@@ -65,16 +68,16 @@ const TimelineVis = ({ data }) => {
           }
 
           const jitterY = (Math.random() - 0.5) * 10;
-
           const x = width / 2 + offsetX;
-          const yJittered = y + jitterY;
+          const yJittered = y + jitterY + yearOffset;
 
           return {
             ...item,
             x: Math.max(margin.left, Math.min(width - margin.right, x)),
             y: yJittered,
-            r: 3,
+            r: yearOffset === 0 ? 3 : 2,
             color: colorScale(item.country || "unknown"),
+            opacity: yearOffset === 0 ? 0.8 : 0.2,
           };
         });
       };
@@ -89,56 +92,14 @@ const TimelineVis = ({ data }) => {
       tooltip = d3
         .select("body")
         .append("div")
-        .attr("id", "tooltip")
-        .style("position", "absolute")
-        .style("background", "#fff")
-        .style("padding", "4px 8px")
-        .style("border", "1px solid #ccc")
-        .style("border-radius", "4px")
-        .style("pointer-events", "none")
-        .style("font-size", "12px")
-        .style("z-index", "1000")
-        .style("display", "none");
+        .attr("id", "tooltip");
     }
 
-    svg
-      .selectAll("circle")
-      .data(nodes)
-      .enter()
-      .append("circle")
-      .attr("cx", width / 2)
-      .attr("cy", height / 2)
-      .attr("r", (d) => d.r)
-      .attr("fill", "blue")
-      .attr("stroke", "none")
-      .attr("opacity", 0.8)
-      .on("mouseover", function (event, d) {
-        d3.select(this).attr("stroke", "blue");
-        tooltip
-          .style("display", "block")
-          .html(
-            `<strong>${d.name || "Unknown"}, ${d.year || "n.d."}</strong><br/>${d.country}`
-          );
-      })
-      .on("mousemove", (event) => {
-        tooltip
-          .style("left", event.pageX + 10 + "px")
-          .style("top", event.pageY + "px");
-      })
-      .on("mouseout", function () {
-        d3.select(this).attr("stroke", "red");
-        tooltip.style("display", "none");
-      })
-      .transition()
-      .duration(1500)
-      .delay((_, i) => i * 2)
-      .attr("cx", (d) => d.x)
-      .attr("cy", (d) => d.y)
-      .attr("fill", "none")
-      .attr("stroke", "red")
-      .attr("stroke-width", 1.5);
+    // Axis with corrected data binding
+    const axis = d3.axisLeft(yScale)
+      .tickValues(d3.range(sortedGroups.length))
+      .tickFormat((d) => sortedGroups[d]);
 
-    const axis = d3.axisLeft(yScale).ticks(sortedGroups.length).tickFormat((d, i) => sortedGroups[i]);
     const axisGroup = svg
       .append("g")
       .attr("transform", `translate(${width / 2},0)`)
@@ -147,8 +108,9 @@ const TimelineVis = ({ data }) => {
     axisGroup
       .selectAll(".tick text")
       .style("cursor", "pointer")
-      .on("mouseover", (event, groupText) => {
-        const group = groupText;
+      .style("fill", "#f0f0f0")
+      .on("mouseover", function (event, d) {
+        const group = sortedGroups[d];
         const groupData = dataByGroup.get(group) || [];
 
         const typeCounts = {
@@ -157,8 +119,8 @@ const TimelineVis = ({ data }) => {
           unknown: 0,
         };
 
-        groupData.forEach((d) => {
-          const type = d.type || "unknown";
+        groupData.forEach((item) => {
+          const type = item.type || "unknown";
           if (typeCounts[type] !== undefined) {
             typeCounts[type]++;
           } else {
@@ -173,19 +135,78 @@ const TimelineVis = ({ data }) => {
             Satellites: ${typeCounts.satellite}<br/>
             Debris: ${typeCounts.debris}<br/>
             Unknown: ${typeCounts.unknown}`
-          );
+          )
+          .style("left", `${event.pageX + 10}px`)
+          .style("top", `${event.pageY + 10}px`);
       })
       .on("mousemove", (event) => {
         tooltip
           .style("left", event.pageX + 10 + "px")
-          .style("top", event.pageY + "px");
+          .style("top", event.pageY + 10 + "px");
       })
       .on("mouseout", () => {
         tooltip.style("display", "none");
       });
+
+    axisGroup
+      .selectAll(".domain")
+      .style("stroke", "#f0f0f0");
+
+    axisGroup
+      .selectAll(".tick line")
+      .style("stroke", "#f0f0f0");
+
+    // Draw circles
+    svg
+      .selectAll("circle")
+      .data(nodes)
+      .enter()
+      .append("circle")
+      .attr("cx", width / 2)
+      .attr("cy", height)
+      .attr("r", (d) => d.r)
+      .attr("fill", "none")
+      .attr("stroke", "#5F1E1E")
+      .attr("stroke-width", 1.5)
+      .attr("opacity", 0.8)
+      .on("mouseover", function (event, d) {
+        d3.select(this).attr("stroke", "#020022");
+        tooltip
+          .style("display", "block")
+          .html(
+            `<strong>${d.name || "Unknown"}, ${d.year || "n.d."}</strong><br/>${d.country}`
+          );
+      })
+      .on("mousemove", (event) => {
+        const padding = 10;
+        const xPos = event.pageX + padding;
+        const yPos = event.pageY + padding;
+        const maxX = window.innerWidth - tooltip.node().offsetWidth - padding;
+        const maxY = window.innerHeight - tooltip.node().offsetHeight - padding;
+        tooltip
+          .style("left", Math.min(xPos, maxX) + "px")
+          .style("top", Math.min(yPos, maxY) + "px");
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("stroke", "#5F1E1E");
+        tooltip.style("display", "none");
+      })
+      .transition()
+      .duration(1500)
+      .delay((_, i) => i * 2)
+      .attr("cx", (d) => d.x)
+      .attr("cy", (d) => d.y)
+      .attr("fill", "none")
+      .attr("stroke", "#5F1E1E")
+      .attr("stroke-width", 1.5);
+
   }, [data]);
 
-  return <svg ref={svgRef}></svg>;
+  return (
+    <div style={{ overflow: 'auto', height: '100vh' }}>
+      <svg ref={svgRef}></svg>
+    </div>
+  );
 };
 
 export default TimelineVis;

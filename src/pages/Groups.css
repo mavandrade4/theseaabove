@@ -1,0 +1,58 @@
+/*GROUPS*/
+.groups {
+    z-index: 100;
+    background-color: #020022;
+
+  }
+  
+  .explore-overlay button {
+    background-color: #020022;
+    color: #f0f0f0;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+  
+  .explore-overlay button:hover {
+    background-color: #4caf50;
+    color: #020022;
+  }
+  
+  
+  .filter-bar {
+    background-color: #f0f0f0;
+    height: 50%;
+    width: 50%;
+    height: 100%;
+    position: absolute;
+    top: 20;
+    left: 0;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .explore-button {
+    background: #020022;
+    color: #f0f0f0;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    box-shadow: none;
+    font-family: "JetBrains Mono";
+  }
+  
+  .explore-button:hover {
+    transform: translate(4px, -4px);
+    box-shadow: 4px -4px 0px #f0f0f0;
+  }
+  
+  .explore-button.selected {
+    background: #f0f0f0;
+    color: #020022;
+  }

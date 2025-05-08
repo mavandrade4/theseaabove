@@ -80,7 +80,8 @@ const Data = () => {
   };
 
   const combinedData = normalizeData(neuraspaceData, spaceDecayData);
-
+  
+  //console.log(combinedData);
   return combinedData;
 };
 
