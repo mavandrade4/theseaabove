@@ -7,6 +7,12 @@ const App = () => {
       <div>
         <h1>Space Decay</h1>
         <p>
+          “Imagine how dangerous sailing the high seas would be if all the ships ever lost in history were still drifting on top of the water”
+        </p>
+        <p>
+          ESA Director General Jan Wörner 2019
+          <br></br>
+          <br></br>
           Lorem Ipsum is simply dummy text of the printing and typesetting
           industry. Lorem Ipsum has been the industry's standard dummy text ever
           since the 1500s, when an unknown printer took a galley of type and

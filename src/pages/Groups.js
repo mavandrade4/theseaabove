@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useContext } from "react";
+import React, { useState, useMemo, useContext, useRef, useEffect } from "react";
 import BubbleChart from "./components/BubbleChart";
 import { dataContext } from "../context/dataContext";
 import './Groups.css'
@@ -12,6 +12,24 @@ const Groups = () => {
     name: "",
   });
   const [showControls, setShowControls] = useState(false);
+  const filterRef = useRef(null); // Ref for filter overlay
+
+  // Handle outside click to close filters
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowControls(false);
+      }
+    };
+
+    if (showControls) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showControls]);
 
   const uniqueValues = {
     type: [...new Set(rawData.map(d => d.type || "unknown"))],
@@ -53,7 +71,7 @@ const Groups = () => {
       </button>
 
       {showControls && (
-        <div className="filter-bar">
+        <div className="filter-bar" ref={filterRef}>
           <input
             type="text"
             placeholder="Search by name..."

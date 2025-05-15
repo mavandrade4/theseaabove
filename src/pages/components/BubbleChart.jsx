@@ -1,10 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import '../Groups.css';
+import "../Groups.css";
+
+const countryCodeMap = new Map();
+try {
+  const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+  for (let code = 65; code <= 90; code++) {
+    for (let code2 = 65; code2 <= 90; code2++) {
+      const cc = String.fromCharCode(code) + String.fromCharCode(code2);
+      const name = regionNames.of(cc);
+      if (name && name !== cc) {
+        countryCodeMap.set(name.toLowerCase(), cc);
+      }
+    }
+  }
+} catch (e) {
+  console.warn("Intl.DisplayNames not supported in this environment.");
+}
 
 const BubbleChart = ({ data }) => {
   const svgRef = useRef();
-  const containerRef = useRef(); // Ref for the container
+  const containerRef = useRef();
   const [groupBy, setGroupBy] = useState("type");
   const [showControls, setShowControls] = useState(true);
 
@@ -49,15 +65,16 @@ const BubbleChart = ({ data }) => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
     svg.attr("width", width).attr("height", height);
-
     svg.style("background-color", "#020022");
 
-    // Use a lighter shade color scale
-    const color = d3.scaleSequential(d3.interpolateGreys); // Use grey shades with light tones
+    const color = d3.scaleSequential(d3.interpolateGreys);
 
     const rootData = buildHierarchy(data, groupBy);
     const root = d3.hierarchy(rootData).sum((d) => d.value || 0);
-    const pack = d3.pack().size([width - 40, height - 40]).padding(5);
+    const pack = d3
+      .pack()
+      .size([width - 100, height - 100])
+      .padding(10);
 
     pack(root);
 
@@ -68,12 +85,14 @@ const BubbleChart = ({ data }) => {
       .append("g")
       .attr("transform", `translate(${width / 2},${height / 2})`);
 
+    const visibleNodes = root.descendants().filter((d) => d.depth > 0);
+
     const circle = g
       .selectAll("circle")
-      .data(root.descendants())
+      .data(visibleNodes)
       .join("circle")
       .attr("r", (d) => d.r)
-      .attr("fill", (d) => (d.children ? color(d.depth) : "#f0f0f0")) // Apply lighter shades
+      .attr("fill", (d) => (d.children ? color(d.depth) : "#f0f0f0"))
       .attr("stroke", "#aaa")
       .attr("stroke-width", 1)
       .style("cursor", (d) => (d.children ? "pointer" : "default"))
@@ -89,7 +108,7 @@ const BubbleChart = ({ data }) => {
 
     const text = g
       .selectAll("text")
-      .data(root.descendants())
+      .data(visibleNodes)
       .join("text")
       .attr("text-anchor", "middle")
       .style("fill-opacity", (d) => (d.parent === root ? 1 : 0))
@@ -98,14 +117,33 @@ const BubbleChart = ({ data }) => {
       )
       .style("font-size", "12px")
       .style("fill", "#f0f0f0")
-      .text((d) => d.data.name)
-      .each(function(d) {
-        // Calculate text width for the given font size
+      .text((d) => {
+        if (groupBy === "country" || d.ancestors().some(a => a.data.name === "country")) {
+          const fullName = d.data.name;
+          const code = countryCodeMap.get(fullName.toLowerCase());
+          return fullName;
+        }
+        return d.data.name;
+      })
+      .each(function (d) {
+        const textEl = d3.select(this);
         const textLength = this.getComputedTextLength();
-        // Check if the text fits within the circle's radius
         if (textLength > d.r * 2) {
-          // If the text doesn't fit, hide it initially
-          d3.select(this).style("display", "none");
+          if (groupBy === "country" || d.ancestors().some(a => a.data.name === "country")) {
+            const fullName = d.data.name;
+            const code = countryCodeMap.get(fullName.toLowerCase());
+            if (code) {
+              textEl.text(`${fullName}-${code}`);
+              const newLength = this.getComputedTextLength();
+              if (newLength > d.r * 2) {
+                textEl.style("display", "none");
+              }
+            } else {
+              textEl.style("display", "none");
+            }
+          } else {
+            textEl.style("display", "none");
+          }
         }
       });
 
@@ -114,13 +152,15 @@ const BubbleChart = ({ data }) => {
       view = v;
 
       circle
-        .attr("transform", (d) =>
-          `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`
+        .attr(
+          "transform",
+          (d) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`
         )
         .attr("r", (d) => d.r * k);
 
-      text.attr("transform", (d) =>
-        `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`
+      text.attr(
+        "transform",
+        (d) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`
       );
     };
 
@@ -135,10 +175,7 @@ const BubbleChart = ({ data }) => {
 
       if (remainingValue <= 0) return;
 
-      const radiusScale = d3
-        .scaleSqrt()
-        .domain([0, totalValue])
-        .range([0, 80]);
+      const radiusScale = d3.scaleSqrt().domain([0, totalValue]).range([0, 80]);
 
       const comparisonGroup = svg
         .append("g")
@@ -168,7 +205,7 @@ const BubbleChart = ({ data }) => {
       addComparisonCircle(d);
 
       const dataRatio = focus.value / root.value;
-      const scaleFactor = Math.sqrt(dataRatio); // Scales area
+      const scaleFactor = Math.sqrt(dataRatio);
 
       const newRadius = focus.r * 2;
       const transition = svg
@@ -187,26 +224,13 @@ const BubbleChart = ({ data }) => {
 
       text
         .transition(transition)
-        .style("fill-opacity", (node) =>
-          node.parent === focus ? 1 : 0
-        )
+        .style("fill-opacity", (node) => (node.parent === focus ? 1 : 0))
         .style("display", (node) =>
           node.parent === focus || node === focus ? "inline" : "none"
         );
     };
 
-    zoomTo([root.x, root.y, root.r * 2.2], 1);
-
-    // Hover effect to display text when hovering over a circle
-    circle
-      .on("mouseover", function (event, d) {
-        const textElement = d3.select(this).select("text");
-        textElement.style("display", "inline"); // Show the text on hover
-      })
-      .on("mouseout", function (event, d) {
-        const textElement = d3.select(this).select("text");
-        textElement.style("display", "none"); // Hide the text when not hovering
-      });
+    zoomTo([root.x, root.y, root.r * 2.4], 0.95);
 
     svg.on("click", () => {
       if (focus.parent) {
@@ -222,38 +246,42 @@ const BubbleChart = ({ data }) => {
   }, [data, groupBy]);
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height: "600px" }}>
-      <button
-        onClick={() => setShowControls((prev) => !prev)}
-        className="explore-button"
-      >
-        {showControls ? "Hide Controls" : "Show Controls"}
-      </button>
+    <div ref={containerRef} className="bubble-container">
+      <div className="bubble-ui">
+        <button
+          onClick={() => setShowControls((prev) => !prev)}
+          className="explore-button"
+        >
+          {showControls ? "Hide Groupings" : "Show Groupings"}
+        </button>
 
-      {showControls && (
-        <div className="explore-buttons" style={{ padding: "10px" }}>
-          {["type", "subtype", "country"].map((key) => (
-            <button
-              key={key}
-              className={`explore-button ${groupBy === key ? "selected" : ""}`}
-              onClick={() => setGroupBy(key)}
-              style={{
-                marginRight: "10px",
-                padding: "8px 12px",
-                background: groupBy === key ? "#070707" : "#f0f0f0",
-                color: groupBy === key ? "#f0f0f0" : "#070707",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              Group by {key}
-            </button>
-          ))}
-        </div>
-      )}
+        {showControls && (
+          <div className="explore-buttons" style={{ padding: "10px" }}>
+            {["type", "subtype", "country"].map((key) => (
+              <button
+                key={key}
+                className={`explore-button ${
+                  groupBy === key ? "selected" : ""
+                }`}
+                onClick={() => setGroupBy(key)}
+                style={{
+                  marginRight: "10px",
+                  padding: "8px 12px",
+                  background: groupBy === key ? "#070707" : "#f0f0f0",
+                  color: groupBy === key ? "#f0f0f0" : "#070707",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                Group by {key}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="groups">
-        <svg ref={svgRef} style={{ display: "block", margin: "auto" }} />
+        <svg ref={svgRef} className="bubble-svg" />
       </div>
     </div>
   );
