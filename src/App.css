@@ -7,7 +7,7 @@ body {
   justify-content: space-between;  /* Distribute items to the left and right */
   align-items: flex-start;  /* Align the items to the top */
   color: #f0f0f0;
-  padding: 20px;
+  padding: 50px;
 }
 
 .App h1 {
@@ -15,14 +15,15 @@ body {
 }
 
 .App p {
-  font-family: "JetBrains Mono";
+  font-family: "JetBrains Mono", monospace;
+  font-size: large;
 }
 
 .App div {
-  width: 45%; /* Adjust the width of the divs to your needs */
+  width: 45%;
 }
 
-button {
+.buttons {
   background-color: #f0f0f0;
   border: 3px #070707;
   padding: 10px 20px;
@@ -31,7 +32,7 @@ button {
   color: #070707;
 }
 
-button:hover {
+.buttons:hover {
   background-color: #f0f0f0;
   border: 3px #5F1E1E;
   color: #5F1E1E;

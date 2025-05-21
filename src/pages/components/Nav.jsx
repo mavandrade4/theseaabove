@@ -8,7 +8,7 @@ const Nav = () => {
         <div className="navbar-links">
           <Link to="/" style={{fontFamily: 'Unbounded'}}>SPACE DECAY</Link>
           <Link to="/timeline">project TIMELINE</Link>
-          <Link to="/groups">project GROUPS</Link>
+          
           <Link to="/">context</Link>
           <Link to="/">about</Link>
         </div>

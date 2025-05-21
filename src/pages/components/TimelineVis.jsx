@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useContext, useState } from "react";
 import { dataContext } from "../../context/dataContext";
 import * as d3 from "d3";
-import "../Timeline.css";
+import '../Timeline.css';
+import { Link } from 'react-router-dom';
+
 
 const TimelineVis = () => {
   const data = useContext(dataContext);
@@ -14,6 +16,10 @@ const TimelineVis = () => {
   useEffect(() => {
     if (!data || data.length === 0) return;
 
+    const filteredData = data.filter(
+      (d) => d.type === "satellite" || d.type === "debris"
+    );
+
     const width = window.innerWidth;
     const height = window.innerHeight * 3;
     const margin = { top: 50, right: 50, bottom: 50, left: 50 };
@@ -24,7 +30,7 @@ const TimelineVis = () => {
       .attr("height", height);
     svg.selectAll("*").remove();
 
-    const dataByGroup = d3.group(data, (d) => d[groupBy] || "unknown");
+    const dataByGroup = d3.group(filteredData, (d) => d[groupBy] || "unknown");
     const keys = Array.from(dataByGroup.keys());
     const numericYears = keys
       .filter((d) => !isNaN(+d))
@@ -41,7 +47,7 @@ const TimelineVis = () => {
       .range([height - margin.bottom, margin.top]);
 
     const countries = Array.from(
-      new Set(data.map((d) => d.country || "unknown"))
+      new Set(filteredData.map((d) => d.country || "unknown"))
     );
     const colorScale = d3
       .scaleOrdinal()
@@ -55,7 +61,7 @@ const TimelineVis = () => {
 
     const scaleWidth = d3
       .scaleLinear()
-      .domain([0, data.length])
+      .domain([0, filteredData.length])
       .range([0, width / 3]);
     let cumulativeSat = 0;
     let cumulativeDebris = 0;
@@ -66,19 +72,10 @@ const TimelineVis = () => {
 
       const satellites = items.filter((d) => d.type === "satellite");
       const debris = items.filter((d) => d.type === "debris");
-      const unknown = items.filter(
-        (d) => d.type !== "satellite" && d.type !== "debris"
-      );
 
-      // Update cumulative totals
       cumulativeSat += satellites.length;
-      //console.log("satelllites LENGTH: " + satellites.length);
-      //console.log("satelllites: " + cumulativeSat);
       cumulativeDebris += debris.length;
-      //console.log("debris LENGTH: " + debris.length);
-      //console.log("debris: " + cumulativeDebris);
 
-      // Draw cumulative bars
       const barHeight = 8;
       const cumulativeSatWidth = scaleWidth(cumulativeSat);
       const cumulativeDebrisWidth = scaleWidth(cumulativeDebris);
@@ -89,7 +86,7 @@ const TimelineVis = () => {
         .attr("y", y - barHeight / 2)
         .attr("width", cumulativeSatWidth)
         .attr("height", barHeight)
-        .attr("fill", "#f0f0f0")
+        .attr("fill", "#020022")
         .attr("opacity", 0.6);
 
       svg
@@ -98,10 +95,36 @@ const TimelineVis = () => {
         .attr("y", y - barHeight / 2)
         .attr("width", cumulativeDebrisWidth)
         .attr("height", barHeight)
-        .attr("fill", "#F44336")
+        .attr("fill", "#020022")
         .attr("opacity", 0.6);
 
-      // Compute node positions
+      svg
+        .append("rect")
+        .attr("x", width / 2 - cumulativeSatWidth)
+        .attr("y", y - barHeight / 2)
+        .attr("width", cumulativeSatWidth + cumulativeDebrisWidth)
+        .attr("height", barHeight)
+        .attr("fill", "transparent")
+        .on("mouseover", (event) => {
+          tooltip
+            .style("display", "block")
+            .html(
+              `<strong>Up to ${group}</strong><br/>
+               Total Satellites: ${cumulativeSat}<br/>
+               Total Debris: ${cumulativeDebris}`
+            )
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY + 10}px`);
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY + 10}px`);
+        })
+        .on("mouseout", () => {
+          tooltip.style("display", "none");
+        });
+
       const maxSpread = (width - margin.left - margin.right) / 2 - 40;
 
       const createPositions = (arr, direction = "center", offsetBase = 0) => {
@@ -112,15 +135,15 @@ const TimelineVis = () => {
           let offsetX = 0;
           if (direction === "left") {
             offsetX =
-              -1 * (Math.random() * count * spacing + cumulativeSatWidth + 10);
+              -1 * (Math.random() * count * spacing + cumulativeSatWidth + 50);
           } else if (direction === "right") {
             offsetX =
-              Math.random() * count * spacing + cumulativeDebrisWidth + 10;
+              Math.random() * count * spacing + cumulativeDebrisWidth + 50;
           } else {
-            offsetX = (Math.random() - 0.5) * 20;
+            offsetX = (Math.random() - 0.5) * 300;
           }
 
-          const jitterY = (Math.random() - 0.5) * 10;
+          const jitterY = (Math.random() - 0.5) * 100;
           const x = width / 2 + offsetX;
           const yJittered = y + jitterY + barHeight;
 
@@ -137,7 +160,6 @@ const TimelineVis = () => {
 
       nodes.push(...createPositions(satellites, "left", cumulativeSatWidth));
       nodes.push(...createPositions(debris, "right", cumulativeDebrisWidth));
-      nodes.push(...createPositions(unknown, "center"));
     });
 
     nodesRef.current = nodes;
@@ -165,20 +187,18 @@ const TimelineVis = () => {
         const group = sortedGroups[d];
         const groupData = dataByGroup.get(group) || [];
 
-        const typeCounts = { satellite: 0, debris: 0, unknown: 0 };
+        const typeCounts = { satellite: 0, debris: 0 };
         groupData.forEach((item) => {
-          const type = item.type || "unknown";
-          if (typeCounts[type] !== undefined) {
+          const type = item.type;
+          if (type === "satellite" || type === "debris") {
             typeCounts[type]++;
-          } else {
-            typeCounts.unknown++;
           }
         });
 
         tooltip
           .style("display", "block")
           .html(
-            `<strong>${group}</strong><br/>Satellites: ${typeCounts.satellite}<br/>Debris: ${typeCounts.debris}<br/>Unknown: ${typeCounts.unknown}`
+            `<strong>${group}</strong><br/>Satellites: ${typeCounts.satellite}<br/>Debris: ${typeCounts.debris}`
           )
           .style("left", `${event.pageX + 10}px`)
           .style("top", `${event.pageY + 10}px`);
@@ -240,17 +260,16 @@ const TimelineVis = () => {
 
     circles
       .transition()
-      .duration(100)
+      //.delay((d, i) => i * 5)
+      .duration(1000)
       .attr("cx", (d) => d.x)
       .attr("cy", (d) => d.y)
-      .on("end", () => {
+      .on("end", function () {
         completed++;
-        console.log(completed);
         if (completed === total) {
           setAnimationDone(true);
         }
       });
-      //.delay((_, i) => i);
   }, [data]);
 
   useEffect(() => {
@@ -258,34 +277,32 @@ const TimelineVis = () => {
     d3.select(svgRef.current)
       .selectAll("circle")
       .transition()
-      .duration(1000000)
+      .duration(100)
       .attr("stroke", (d) => (useColor ? d.color : "#070707"));
   }, [useColor, animationDone]);
 
   return (
-    <div style={{ overflowY: "auto", height: "100vh", position: "relative" }}>
+    <div>
       {animationDone && (
         <button
+          className="buttons"
           onClick={() => setUseColor(!useColor)}
-          style={{
-            position: "fixed",
-            top: 10,
-            left: 10,
-            zIndex: 1000,
-            padding: "8px 12px",
-            background: "#333",
-            color: "#f0f0f0",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
         >
           Toggle Color Separation
         </button>
       )}
-      <div style={{ paddingTop: "60px" }}>
+      <div>
+        <div>
+          <h2>Satellite and Debris Timeline</h2>
+          <p className="timeline-caption">
+            This visualization shows the cumulative number of satellites (left)
+            and debris (right) launched or created over time. Each dot
+            represents individual objects that can be color-coded by country.
+          </p>
+        </div>
         <svg ref={svgRef}></svg>
       </div>
+      <Link className="buttons" to="/groups">project GROUPS</Link>
     </div>
   );
 };

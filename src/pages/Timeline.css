@@ -11,3 +11,30 @@
   z-index: 9999;
   display: none;
 }
+
+/* Tooltip styling */
+#tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  display: none;
+}
+
+/* Caption under the timeline */
+.timeline-caption {
+  color: #f0f0f0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 16px;
+  text-align: center;
+  padding: 10px 20px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+

@@ -10,6 +10,7 @@
   .navbar-links {
     display: flex;
     padding: 1rem;
+    font-size: large;
   }
   
   .navbar-links a {

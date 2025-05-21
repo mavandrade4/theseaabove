@@ -246,32 +246,24 @@ const BubbleChart = ({ data }) => {
   }, [data, groupBy]);
 
   return (
-    <div ref={containerRef} className="bubble-container">
-      <div className="bubble-ui">
+    <div ref={containerRef} className="groupings-container">
+      <div className="groupings-ui">
         <button
           onClick={() => setShowControls((prev) => !prev)}
-          className="explore-button"
+          className="buttons"
         >
           {showControls ? "Hide Groupings" : "Show Groupings"}
         </button>
 
         {showControls && (
-          <div className="explore-buttons" style={{ padding: "10px" }}>
+          <div className="buttons">
             {["type", "subtype", "country"].map((key) => (
               <button
                 key={key}
-                className={`explore-button ${
+                className={`buttons ${
                   groupBy === key ? "selected" : ""
                 }`}
                 onClick={() => setGroupBy(key)}
-                style={{
-                  marginRight: "10px",
-                  padding: "8px 12px",
-                  background: groupBy === key ? "#070707" : "#f0f0f0",
-                  color: groupBy === key ? "#f0f0f0" : "#070707",
-                  border: "none",
-                  cursor: "pointer",
-                }}
               >
                 Group by {key}
               </button>
@@ -281,7 +273,7 @@ const BubbleChart = ({ data }) => {
       </div>
 
       <div className="groups">
-        <svg ref={svgRef} className="bubble-svg" />
+        <svg ref={svgRef} className="groupings-svg" />
       </div>
     </div>
   );
