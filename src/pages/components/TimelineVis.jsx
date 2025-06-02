@@ -1,18 +1,60 @@
 import React, { useEffect, useRef, useContext, useState } from "react";
 import { dataContext } from "../../context/dataContext";
 import * as d3 from "d3";
-import '../Timeline.css';
-import { Link } from 'react-router-dom';
+import "../Timeline.css";
+import { Link } from "react-router-dom";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import ScrollToPlugin from "gsap/ScrollToPlugin";
 
+gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
 const TimelineVis = () => {
   const data = useContext(dataContext);
   const groupBy = "year";
   const svgRef = useRef();
+  const containerRef = useRef();
   const [useColor, setUseColor] = useState(false);
+  const [useWhiteBars, setUseWhiteBars] = useState(false);
   const [animationDone, setAnimationDone] = useState(false);
-  const nodesRef = useRef([]);
+  const [annotation, setAnnotation] = useState("");
+  const [isPaused, setIsPaused] = useState(false);
+  const resumeRef = useRef(null);
 
+  const handleResume = () => {
+    setAnnotation("");
+    setIsPaused(false);
+    if (resumeRef.current) resumeRef.current();
+  };
+
+  const annotations = [
+    {
+      index: 200,
+      message:
+        "Annotation 1 Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
+    },
+    {
+      index: 800,
+      message:
+        "Annotation 2 Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
+    },
+    {
+      index: 1500,
+      message:
+        "Annotation 3 Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
+    },
+  ];
+
+  // Lock scroll only when animation not done
+  useEffect(() => {
+    if (!animationDone) {
+      document.body.classList.add("scroll-locked");
+    } else {
+      document.body.classList.remove("scroll-locked");
+    }
+  }, [animationDone]);
+
+  // Main drawing effect — depends ONLY on data
   useEffect(() => {
     if (!data || data.length === 0) return;
 
@@ -22,13 +64,33 @@ const TimelineVis = () => {
 
     const width = window.innerWidth;
     const height = window.innerHeight * 3;
-    const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+    const margin = { top: 50, right: 50, bottom: 50, left: 80 };
 
     const svg = d3
       .select(svgRef.current)
       .attr("width", width)
       .attr("height", height);
     svg.selectAll("*").remove();
+
+    const tooltip = d3.select("#tooltip");
+
+    function showTooltip(content, event) {
+      tooltip
+        .html(content)
+        .style("opacity", 1)
+        .style("left", `${event.pageX + 10}px`)
+        .style("top", `${event.pageY - 20}px`);
+    }
+
+    function hideTooltip() {
+      tooltip.style("opacity", 0);
+    }
+
+    const initialScrollOffset = 2000;
+    // Set initial scroll position at start (no scroll lock during animation)
+    gsap.set(window, {
+      scrollTo: { y: height - window.innerHeight - initialScrollOffset },
+    });
 
     const dataByGroup = d3.group(filteredData, (d) => d[groupBy] || "unknown");
     const keys = Array.from(dataByGroup.keys());
@@ -46,6 +108,33 @@ const TimelineVis = () => {
       .domain([0, sortedGroups.length - 1])
       .range([height - margin.bottom, margin.top]);
 
+    const yAxis = d3
+      .axisLeft(yScale)
+      .tickFormat((d) => (d === "unknown" ? "Unknown" : sortedGroups[d] ?? d))
+      .ticks(sortedGroups.length);
+
+    svg
+      .append("g")
+      .attr("class", "y-axis")
+      .attr("transform", `translate(${margin.left}, 0)`)
+      .call(yAxis)
+      .selectAll("text")
+      .style("font-size", "12px")
+      .style("fill", "#333");
+
+    svg
+      .select(".y-axis")
+      .selectAll("text")
+      .on("mouseover", function (event, d) {
+        showTooltip(`Year: ${sortedGroups[d] ?? d}`, event);
+      })
+      .on("mousemove", function (event) {
+        tooltip
+          .style("left", `${event.pageX + 10}px`)
+          .style("top", `${event.pageY - 20}px`);
+      })
+      .on("mouseout", hideTooltip);
+
     const countries = Array.from(
       new Set(filteredData.map((d) => d.country || "unknown"))
     );
@@ -56,15 +145,14 @@ const TimelineVis = () => {
 
     const maxCount =
       d3.max(Array.from(dataByGroup.values(), (v) => v.length)) || 1;
-
-    const nodes = [];
-
     const scaleWidth = d3
       .scaleLinear()
       .domain([0, filteredData.length])
       .range([0, width / 3]);
+
     let cumulativeSat = 0;
     let cumulativeDebris = 0;
+    const nodes = [];
 
     sortedGroups.forEach((group, i) => {
       const items = dataByGroup.get(group) || [];
@@ -86,8 +174,17 @@ const TimelineVis = () => {
         .attr("y", y - barHeight / 2)
         .attr("width", cumulativeSatWidth)
         .attr("height", barHeight)
-        .attr("fill", "#020022")
-        .attr("opacity", 0.6);
+        .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707")
+        .attr("opacity", 0.6)
+        .on("mouseover", function (event) {
+          showTooltip(`Cumulative ${group} count: ${items.length}`, event);
+        })
+        .on("mousemove", function (event) {
+          tooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", hideTooltip);
 
       svg
         .append("rect")
@@ -95,39 +192,21 @@ const TimelineVis = () => {
         .attr("y", y - barHeight / 2)
         .attr("width", cumulativeDebrisWidth)
         .attr("height", barHeight)
-        .attr("fill", "#020022")
-        .attr("opacity", 0.6);
-
-      svg
-        .append("rect")
-        .attr("x", width / 2 - cumulativeSatWidth)
-        .attr("y", y - barHeight / 2)
-        .attr("width", cumulativeSatWidth + cumulativeDebrisWidth)
-        .attr("height", barHeight)
-        .attr("fill", "transparent")
-        .on("mouseover", (event) => {
-          tooltip
-            .style("display", "block")
-            .html(
-              `<strong>Up to ${group}</strong><br/>
-               Total Satellites: ${cumulativeSat}<br/>
-               Total Debris: ${cumulativeDebris}`
-            )
-            .style("left", `${event.pageX + 10}px`)
-            .style("top", `${event.pageY + 10}px`);
+        .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707")
+        .attr("opacity", 0.6)
+        .on("mouseover", function (event) {
+          showTooltip(`Cumulative ${group} count: ${items.length}`, event);
         })
-        .on("mousemove", (event) => {
+        .on("mousemove", function (event) {
           tooltip
             .style("left", `${event.pageX + 10}px`)
-            .style("top", `${event.pageY + 10}px`);
+            .style("top", `${event.pageY - 20}px`);
         })
-        .on("mouseout", () => {
-          tooltip.style("display", "none");
-        });
+        .on("mouseout", hideTooltip);
 
       const maxSpread = (width - margin.left - margin.right) / 2 - 40;
 
-      const createPositions = (arr, direction = "center", offsetBase = 0) => {
+      const createPositions = (arr, direction = "center") => {
         const count = arr.length;
         const spacing = maxSpread / maxCount;
 
@@ -158,151 +237,156 @@ const TimelineVis = () => {
         });
       };
 
-      nodes.push(...createPositions(satellites, "left", cumulativeSatWidth));
-      nodes.push(...createPositions(debris, "right", cumulativeDebrisWidth));
+      nodes.push(...createPositions(satellites, "left"));
+      nodes.push(...createPositions(debris, "right"));
     });
 
-    nodesRef.current = nodes;
+    const totalSteps = nodes.length;
+    const scrollRange = height - window.innerHeight - initialScrollOffset;
+    const scrollStep = scrollRange / totalSteps;
 
-    let tooltip = d3.select("#tooltip");
-    if (tooltip.empty()) {
-      tooltip = d3.select("body").append("div").attr("id", "tooltip");
-    }
+    const animateNodes = async () => {
+      const batchSize = 10;
 
-    const axis = d3
-      .axisLeft(yScale)
-      .tickValues(d3.range(sortedGroups.length))
-      .tickFormat((d) => sortedGroups[d]);
+      // Create scroll tween once and pause it initially
+      let scrollTween = gsap.to(window, {
+        scrollTo: { y: 0 },
+        duration: 0.5,
+        ease: "power2.out",
+        paused: true,
+      });
 
-    const axisGroup = svg
-      .append("g")
-      .attr("transform", `translate(${width / 2},0)`)
-      .call(axis);
-
-    axisGroup
-      .selectAll(".tick text")
-      .style("cursor", "pointer")
-      .style("fill", "#f0f0f0")
-      .on("mouseover", function (event, d) {
-        const group = sortedGroups[d];
-        const groupData = dataByGroup.get(group) || [];
-
-        const typeCounts = { satellite: 0, debris: 0 };
-        groupData.forEach((item) => {
-          const type = item.type;
-          if (type === "satellite" || type === "debris") {
-            typeCounts[type]++;
-          }
+      for (let i = 0; i < totalSteps; i += batchSize) {
+        const batch = nodes.slice(i, i + batchSize);
+        batch.forEach((d) => {
+          d3.select(svgRef.current)
+            .append("circle")
+            .datum(d)
+            .attr("cx", width / 2)
+            .attr("cy", height)
+            .attr("r", d.r)
+            .attr("fill", "none")
+            .attr("stroke", "#5F1E1E")
+            .attr("stroke-width", 1.5)
+            .attr("opacity", d.opacity)
+            .transition()
+            .duration(50)
+            .attr("cx", d.x)
+            .attr("cy", d.y);
         });
 
-        tooltip
-          .style("display", "block")
-          .html(
-            `<strong>${group}</strong><br/>Satellites: ${typeCounts.satellite}<br/>Debris: ${typeCounts.debris}`
-          )
-          .style("left", `${event.pageX + 10}px`)
-          .style("top", `${event.pageY + 10}px`);
-      })
-      .on("mousemove", (event) => {
-        tooltip
-          .style("left", `${event.pageX + 10}px`)
-          .style("top", `${event.pageY + 10}px`);
-      })
-      .on("mouseout", () => {
-        tooltip.style("display", "none");
-      });
+        d3.select(svgRef.current)
+          .selectAll("circle")
+          .on("mouseover", function (event, d) {
+            showTooltip(
+              `Type: ${d.type}<br/>Country: ${d.country || "Unknown"}`,
+              event
+            );
+          })
+          .on("mousemove", function (event) {
+            tooltip
+              .style("left", `${event.pageX + 10}px`)
+              .style("top", `${event.pageY - 20}px`);
+          })
+          .on("mouseout", hideTooltip);
 
-    axisGroup.selectAll(".domain").style("stroke", "#f0f0f0");
-    axisGroup.selectAll(".tick line").style("stroke", "#f0f0f0");
+        // Calculate vertical center of the current batch
+        const batchCenterY = d3.mean(batch, (d) => d.y) || window.innerHeight / 2;
 
-    const circles = svg
-      .selectAll("circle")
-      .data(nodes)
-      .enter()
-      .append("circle")
-      .attr("cx", width / 2)
-      .attr("cy", height)
-      .attr("r", (d) => d.r)
-      .attr("fill", "none")
-      .attr("stroke", "#5F1E1E")
-      .attr("stroke-width", 1.5)
-      .attr("opacity", (d) => d.opacity)
-      .on("mouseover", function (event, d) {
-        d3.select(this).attr("stroke", "#020022");
-        tooltip
-          .style("display", "block")
-          .html(
-            `<strong>${d.name || "Unknown"}, ${d.year || "n.d."}</strong><br/>${
-              d.country
-            }`
-          );
-      })
-      .on("mousemove", (event) => {
-        const padding = 10;
-        const xPos = event.pageX + padding;
-        const yPos = event.pageY + padding;
-        const maxX = window.innerWidth - tooltip.node().offsetWidth - padding;
-        const maxY = window.innerHeight - tooltip.node().offsetHeight - padding;
-        tooltip
-          .style("left", Math.min(xPos, maxX) + "px")
-          .style("top", Math.min(yPos, maxY) + "px");
-      })
-      .on("mouseout", function () {
-        d3.select(this).attr(
-          "stroke",
-          useColor ? d3.select(this).datum().color : "#5F1E1E"
-        );
-        tooltip.style("display", "none");
-      });
+        // Scroll target is batch center minus half viewport height, clamped to >= 0
+        const scrollTargetY = Math.max(0, batchCenterY - window.innerHeight / 2);
 
-    let completed = 0;
-    const total = nodes.length;
+        // Update the tween's scrollTo target and restart smoothly
+        scrollTween.vars.scrollTo.y = scrollTargetY;
+        scrollTween.invalidate();
+        scrollTween.restart();
 
-    circles
-      .transition()
-      //.delay((d, i) => i * 5)
-      .duration(1000)
-      .attr("cx", (d) => d.x)
-      .attr("cy", (d) => d.y)
-      .on("end", function () {
-        completed++;
-        if (completed === total) {
-          setAnimationDone(true);
+        const annotationObj = annotations.find((a) => a.index === i);
+        if (annotationObj) {
+          setAnnotation(annotationObj.message);
+          setIsPaused(true);
+          await new Promise((resolve) => {
+            resumeRef.current = resolve;
+          });
+          setAnnotation("");
+          setIsPaused(false);
         }
-      });
+
+        if (!isPaused) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+      }
+
+      setAnimationDone(true);
+      document.body.classList.remove("scroll-locked");
+    };
+
+    animateNodes();
+
+    return () => {
+      ScrollTrigger.getAll().forEach((st) => st.kill());
+    };
   }, [data]);
 
   useEffect(() => {
     if (!animationDone) return;
+
     d3.select(svgRef.current)
       .selectAll("circle")
       .transition()
       .duration(100)
-      .attr("stroke", (d) => (useColor ? d.color : "#070707"));
+      .attr("stroke", (d) => (useColor ? d.color : "#5F1E1E"));
   }, [useColor, animationDone]);
 
+  useEffect(() => {
+    if (!animationDone) return;
+
+    d3.select(svgRef.current)
+      .selectAll("rect")
+      .transition()
+      .duration(200)
+      .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707");
+  }, [useWhiteBars, animationDone]);
+
   return (
-    <div>
+    <div
+      ref={containerRef}
+      className="narrative"
+      style={{ position: "relative" }}
+    >
       {animationDone && (
-        <button
-          className="buttons"
-          onClick={() => setUseColor(!useColor)}
-        >
-          Toggle Color Separation
-        </button>
+        <>
+          <button className="buttons" onClick={() => setUseColor(!useColor)}>
+            Toggle Color Separation
+          </button>
+          <button
+            className="buttons"
+            onClick={() => setUseWhiteBars(!useWhiteBars)}
+          >
+            Toggle Bar Color
+          </button>
+        </>
       )}
       <div>
-        <div>
-          <h2>Satellite and Debris Timeline</h2>
-          <p className="timeline-caption">
-            This visualization shows the cumulative number of satellites (left)
-            and debris (right) launched or created over time. Each dot
-            represents individual objects that can be color-coded by country.
-          </p>
-        </div>
-        <svg ref={svgRef}></svg>
+        <p className="timeline-caption">
+          This visualization shows the cumulative number of satellites (left)
+          and debris (right) accumulated over time. Each dot represents an
+          individual object.
+        </p>
       </div>
-      <Link className="buttons" to="/groups">project GROUPS</Link>
+      {annotation && (
+        <div className="annotation-box">
+          <p>{annotation}</p>
+          <button className="buttons" onClick={handleResume}>
+            Continue
+          </button>
+        </div>
+      )}
+      <div id="tooltip" className="tooltip"></div>
+      <svg ref={svgRef}></svg>
+      <Link className="buttons" to="/groups">
+        project GROUPS
+      </Link>
     </div>
   );
 };

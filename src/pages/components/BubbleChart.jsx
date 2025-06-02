@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useMemo, useRef, useEffect, useContext } from "react";
 import * as d3 from "d3";
+import { dataContext } from "../../context/dataContext";
 import "../Groups.css";
 
 const countryCodeMap = new Map();
@@ -18,11 +19,86 @@ try {
   console.warn("Intl.DisplayNames not supported in this environment.");
 }
 
-const BubbleChart = ({ data }) => {
+const BubbleChart = () => {
+  const rawData = useContext(dataContext);
+
+  // FILTER STATE
+  const filterButtonRef = useRef(null);
+
+  const [filters, setFilters] = useState({
+    type: [],
+    subtype: [],
+    year: [],
+    name: "",
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  const filterRef = useRef(null);
+
+  // GROUPING STATE
+  const [groupBy, setGroupBy] = useState("type");
+  const [showGroupControls, setShowGroupControls] = useState(true);
+
+  // Handle outside click to close filter panel
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowFilters(false);
+      }
+    };
+
+    if (showFilters) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showFilters]);
+
+  // Unique filter values
+  const uniqueValues = useMemo(
+    () => ({
+      type: [...new Set(rawData.map((d) => d.type || "unknown"))],
+      subtype: [...new Set(rawData.map((d) => d.subtype || "unknown"))],
+      year: [...new Set(rawData.map((d) => d.year || "unknown"))],
+    }),
+    [rawData]
+  );
+
+  // Filter handlers
+  const handleMultiSelect = (filterKey, value) => {
+    setFilters((prev) => {
+      const alreadySelected = prev[filterKey].includes(value);
+      const updatedList = alreadySelected
+        ? prev[filterKey].filter((v) => v !== value)
+        : [...prev[filterKey], value];
+      return { ...prev, [filterKey]: updatedList };
+    });
+  };
+
+  const handleNameChange = (e) => {
+    setFilters((prev) => ({ ...prev, name: e.target.value }));
+  };
+
+  // Filter data based on filters
+  const filteredData = useMemo(() => {
+    return rawData.filter((d) => {
+      const matchType =
+        filters.type.length === 0 || filters.type.includes(d.type || "unknown");
+      const matchSubtype =
+        filters.subtype.length === 0 ||
+        filters.subtype.includes(d.subtype || "unknown");
+      const matchYear =
+        filters.year.length === 0 || filters.year.includes(d.year || "unknown");
+      const matchName =
+        filters.name === "" ||
+        (d.name && d.name.toLowerCase().includes(filters.name.toLowerCase()));
+      return matchType && matchSubtype && matchYear && matchName;
+    });
+  }, [filters, rawData]);
+
+  // D3 bubble chart & grouping logic below
   const svgRef = useRef();
   const containerRef = useRef();
-  const [groupBy, setGroupBy] = useState("type");
-  const [showControls, setShowControls] = useState(true);
 
   const buildHierarchy = (data, groupBy) => {
     const groupings = {
@@ -56,7 +132,7 @@ const BubbleChart = ({ data }) => {
   };
 
   useEffect(() => {
-    if (!data || data.length === 0) return;
+    if (!filteredData || filteredData.length === 0) return;
 
     const container = containerRef.current;
     const width = container.clientWidth;
@@ -69,7 +145,7 @@ const BubbleChart = ({ data }) => {
 
     const color = d3.scaleSequential(d3.interpolateGreys);
 
-    const rootData = buildHierarchy(data, groupBy);
+    const rootData = buildHierarchy(filteredData, groupBy);
     const root = d3.hierarchy(rootData).sum((d) => d.value || 0);
     const pack = d3
       .pack()
@@ -118,30 +194,35 @@ const BubbleChart = ({ data }) => {
       .style("font-size", "12px")
       .style("fill", "#f0f0f0")
       .text((d) => {
-        if (groupBy === "country" || d.ancestors().some(a => a.data.name === "country")) {
+        if (
+          groupBy === "country" ||
+          d.ancestors().some((a) => a.data.name === "country")
+        ) {
           const fullName = d.data.name;
-          const code = countryCodeMap.get(fullName.toLowerCase());
+          // Show full name initially
           return fullName;
         }
         return d.data.name;
       })
       .each(function (d) {
         const textEl = d3.select(this);
-        const textLength = this.getComputedTextLength();
-        if (textLength > d.r * 2) {
-          if (groupBy === "country" || d.ancestors().some(a => a.data.name === "country")) {
-            const fullName = d.data.name;
-            const code = countryCodeMap.get(fullName.toLowerCase());
-            if (code) {
-              textEl.text(`${fullName}-${code}`);
-              const newLength = this.getComputedTextLength();
-              if (newLength > d.r * 2) {
-                textEl.style("display", "none");
-              }
-            } else {
+        const fullName = d.data.name;
+        const code = countryCodeMap.get(fullName.toLowerCase());
+        const radius = d.r;
+
+        // Check if full name fits
+        let textLength = this.getComputedTextLength();
+        if (textLength > radius * 2) {
+          // Full name too long, try country code
+          if (code) {
+            textEl.text(code);
+            textLength = this.getComputedTextLength();
+            if (textLength > radius * 2) {
+              // Code too long, hide text
               textEl.style("display", "none");
             }
           } else {
+            // No code, hide text
             textEl.style("display", "none");
           }
         }
@@ -243,26 +324,65 @@ const BubbleChart = ({ data }) => {
     return () => {
       svg.on("click", null);
     };
-  }, [data, groupBy]);
+  }, [filteredData, groupBy]);
 
   return (
-    <div ref={containerRef} className="groupings-container">
-      <div className="groupings-ui">
+    <div ref={containerRef} className="groups-container">
+      <div className="filter-ui">
         <button
-          onClick={() => setShowControls((prev) => !prev)}
-          className="buttons"
+          ref={filterButtonRef}
+          onClick={() => setShowFilters((prev) => !prev)}
+          className={`buttons ${showFilters ? "active" : ""}`}
         >
-          {showControls ? "Hide Groupings" : "Show Groupings"}
+          {showFilters ? "Hide Filters" : "Show Filters"}
         </button>
 
-        {showControls && (
+        {showFilters && (
+          <div className="filter-bar" ref={filterRef}>
+            <input
+              type="text"
+              placeholder="Search by name..."
+              value={filters.name}
+              onChange={handleNameChange}
+            />
+
+            {["type", "subtype", "year"].map((key) => (
+              <div key={key}>
+                <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>
+                <div>
+                  {uniqueValues[key].map((value) => (
+                    <button
+                      key={value}
+                      onClick={() => handleMultiSelect(key, value)}
+                      className={`buttons ${
+                        filters[key].includes(value) ? "selected" : ""
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Grouping UI */}
+      <div className="groupings-ui">
+        <button
+          onClick={() => setShowGroupControls((prev) => !prev)}
+          className="buttons"
+        >
+          {showGroupControls ? "Hide Groupings" : "Show Groupings"}
+        </button>
+
+        {showGroupControls && (
           <div className="buttons">
             {["type", "subtype", "country"].map((key) => (
               <button
                 key={key}
-                className={`buttons ${
-                  groupBy === key ? "selected" : ""
-                }`}
+                className={`buttons ${groupBy === key ? "selected" : ""}`}
                 onClick={() => setGroupBy(key)}
               >
                 Group by {key}
@@ -272,6 +392,7 @@ const BubbleChart = ({ data }) => {
         )}
       </div>
 
+      {/* D3 SVG */}
       <div className="groups">
         <svg ref={svgRef} className="groupings-svg" />
       </div>
