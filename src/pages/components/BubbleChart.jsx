@@ -134,6 +134,7 @@ const BubbleChart = () => {
   useEffect(() => {
     if (!filteredData || filteredData.length === 0) return;
 
+
     const container = containerRef.current;
     const width = container.clientWidth;
     const height = container.clientHeight;
@@ -279,6 +280,7 @@ const BubbleChart = () => {
         .style("font-size", "12px")
         .text("Comparison");
     };
+    
 
     const zoom = (d) => {
       focus = d;
@@ -320,6 +322,8 @@ const BubbleChart = () => {
         d3.select("#comparison-group").remove();
       }
     });
+    
+    d3.select("navbar").style("display", "flex");
 
     return () => {
       svg.on("click", null);
@@ -328,6 +332,8 @@ const BubbleChart = () => {
 
   return (
     <div ref={containerRef} className="groups-container">
+      <div className="controls">
+      {/* Filter UI */}
       <div className="filter-ui">
         <button
           ref={filterButtonRef}
@@ -390,6 +396,7 @@ const BubbleChart = () => {
             ))}
           </div>
         )}
+      </div>
       </div>
 
       {/* D3 SVG */}

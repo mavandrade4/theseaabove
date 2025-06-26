@@ -25,7 +25,7 @@
 
 .filter-ui {
   position: absolute;
-  top: 5rem;
+  top: 13rem;
   left: 1rem;
   z-index: 11;
   display: flex;
@@ -71,7 +71,7 @@
 .groupings-ui {
   position: absolute;
   z-index: 10;
-  top: 1rem;
+  top: 7rem;
   left: 1rem;
   display: flex;
   gap: 0.5rem;

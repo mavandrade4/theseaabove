@@ -1,4 +1,4 @@
-.narrative{
+.narrative {
   background-color: #070707;
 }
 
@@ -13,7 +13,9 @@
   color: #070707;
   box-shadow: 0 2px 8px #070707;
   z-index: 9999;
-  display: none;
+
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .timeline-caption {
@@ -26,13 +28,12 @@
   margin: 0 auto;
 }
 
-
 .annotation-box {
   position: fixed;
   top: 20%;
   right: 30px;
   max-width: 300px;
-  background-color:#020022;
+  background-color: #020022;
   color: #f0f0f0;
   padding: 20px;
   border-radius: 12px;
@@ -54,7 +55,9 @@
   }
 }
 
+/* Lock scroll during animation */
 body.scroll-locked {
   overflow: hidden;
   height: 100%;
 }
+

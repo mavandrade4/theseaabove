@@ -19,7 +19,9 @@ const TimelineVis = () => {
   const [animationDone, setAnimationDone] = useState(false);
   const [annotation, setAnnotation] = useState("");
   const [isPaused, setIsPaused] = useState(false);
+  const [skipAnimation, setSkipAnimation] = useState(false);
   const resumeRef = useRef(null);
+  const scrollTweenRef = useRef(null); // NEW: Track scroll tween
 
   const handleResume = () => {
     setAnnotation("");
@@ -45,7 +47,6 @@ const TimelineVis = () => {
     },
   ];
 
-  // Lock scroll only when animation not done
   useEffect(() => {
     if (!animationDone) {
       document.body.classList.add("scroll-locked");
@@ -54,7 +55,6 @@ const TimelineVis = () => {
     }
   }, [animationDone]);
 
-  // Main drawing effect — depends ONLY on data
   useEffect(() => {
     if (!data || data.length === 0) return;
 
@@ -87,7 +87,6 @@ const TimelineVis = () => {
     }
 
     const initialScrollOffset = 2000;
-    // Set initial scroll position at start (no scroll lock during animation)
     gsap.set(window, {
       scrollTo: { y: height - window.innerHeight - initialScrollOffset },
     });
@@ -248,15 +247,51 @@ const TimelineVis = () => {
     const animateNodes = async () => {
       const batchSize = 10;
 
-      // Create scroll tween once and pause it initially
+      if (skipAnimation) {
+        nodes.forEach((d) => {
+          d3.select(svgRef.current)
+            .append("circle")
+            .datum(d)
+            .attr("cx", d.x)
+            .attr("cy", d.y)
+            .attr("r", d.r)
+            .attr("fill", "none")
+            .attr("stroke", useColor ? d.color : "#5F1E1E")
+            .attr("stroke-width", 1.5)
+            .attr("opacity", d.opacity);
+        });
+
+        d3.select(svgRef.current)
+          .selectAll("circle")
+          .on("mouseover", function (event, d) {
+            showTooltip(
+              `Type: ${d.type}<br/>Country: ${d.country || "Unknown"}`,
+              event
+            );
+          })
+          .on("mousemove", function (event) {
+            tooltip
+              .style("left", `${event.pageX + 10}px`)
+              .style("top", `${event.pageY - 20}px`);
+          })
+          .on("mouseout", hideTooltip);
+
+        setAnimationDone(true);
+        document.body.classList.remove("scroll-locked");
+        return;
+      }
+
       let scrollTween = gsap.to(window, {
         scrollTo: { y: 0 },
         duration: 0.5,
         ease: "power2.out",
         paused: true,
       });
+      scrollTweenRef.current = scrollTween;
 
       for (let i = 0; i < totalSteps; i += batchSize) {
+        if (skipAnimation) break;
+
         const batch = nodes.slice(i, i + batchSize);
         batch.forEach((d) => {
           d3.select(svgRef.current)
@@ -290,13 +325,14 @@ const TimelineVis = () => {
           })
           .on("mouseout", hideTooltip);
 
-        // Calculate vertical center of the current batch
-        const batchCenterY = d3.mean(batch, (d) => d.y) || window.innerHeight / 2;
+        const batchCenterY =
+          d3.mean(batch, (d) => d.y) || window.innerHeight / 2;
 
-        // Scroll target is batch center minus half viewport height, clamped to >= 0
-        const scrollTargetY = Math.max(0, batchCenterY - window.innerHeight / 2);
+        const scrollTargetY = Math.max(
+          0,
+          batchCenterY - window.innerHeight / 2
+        );
 
-        // Update the tween's scrollTo target and restart smoothly
         scrollTween.vars.scrollTo.y = scrollTargetY;
         scrollTween.invalidate();
         scrollTween.restart();
@@ -305,6 +341,7 @@ const TimelineVis = () => {
         if (annotationObj) {
           setAnnotation(annotationObj.message);
           setIsPaused(true);
+          if (skipAnimation) break;
           await new Promise((resolve) => {
             resumeRef.current = resolve;
           });
@@ -326,7 +363,16 @@ const TimelineVis = () => {
     return () => {
       ScrollTrigger.getAll().forEach((st) => st.kill());
     };
-  }, [data]);
+  }, [data, skipAnimation]);
+
+  useEffect(() => {
+    if (skipAnimation && scrollTweenRef.current) {
+      scrollTweenRef.current.kill();
+      scrollTweenRef.current = null;
+      setAnimationDone(true);
+      document.body.classList.remove("scroll-locked");
+    }
+  }, [skipAnimation]);
 
   useEffect(() => {
     if (!animationDone) return;
@@ -354,26 +400,36 @@ const TimelineVis = () => {
       className="narrative"
       style={{ position: "relative" }}
     >
+      {!animationDone && !skipAnimation && (
+        <button
+          className="buttons"
+          onClick={() => setSkipAnimation(true)}
+          style={{ position: "fixed", top: "15vh", right: "5vh" }}
+        >
+          Skip Animation
+        </button>
+      )}
       {animationDone && (
         <>
-          <button className="buttons" onClick={() => setUseColor(!useColor)}>
+          <button
+            className="buttons"
+            onClick={() => setUseColor(!useColor)}
+            style={{ marginTop: "50px" }}
+          >
             Toggle Color Separation
           </button>
           <button
             className="buttons"
             onClick={() => setUseWhiteBars(!useWhiteBars)}
+            style={{ marginTop: "50px" }}
           >
             Toggle Bar Color
           </button>
+          <Link className="buttons" to="/groups">
+            Explore
+          </Link>
         </>
       )}
-      <div>
-        <p className="timeline-caption">
-          This visualization shows the cumulative number of satellites (left)
-          and debris (right) accumulated over time. Each dot represents an
-          individual object.
-        </p>
-      </div>
       {annotation && (
         <div className="annotation-box">
           <p>{annotation}</p>
@@ -384,9 +440,6 @@ const TimelineVis = () => {
       )}
       <div id="tooltip" className="tooltip"></div>
       <svg ref={svgRef}></svg>
-      <Link className="buttons" to="/groups">
-        project GROUPS
-      </Link>
     </div>
   );
 };

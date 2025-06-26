@@ -12,6 +12,9 @@ import {
 import Root from './root';
 import Timeline from './pages/Timeline';
 import Groups from './pages/Groups';
+import Context from './pages/Context';
+import About from './pages/About';
+import Project from './pages/Project';
 
 const router = createBrowserRouter([
   {
@@ -29,6 +32,18 @@ const router = createBrowserRouter([
       {
         path: "/groups",
         element: <Groups />,
+      },
+      {
+        path: "/project",
+        element: <Project />,
+      },
+      {
+        path: "/context",
+        element: <Context />,
+      },
+      {
+        path: "/about",
+        element: <About />,
       },
     ]
   },
