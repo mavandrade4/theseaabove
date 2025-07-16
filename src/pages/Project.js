@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { ScrollToPlugin, ScrollTrigger, Observer } from "gsap/all";
+import { ScrollTrigger, Observer } from "gsap/all";
 import "../App.css";
 import { Link } from "react-router-dom";
 
@@ -87,6 +87,11 @@ const Project = () => {
 
       <div className="title-frame" ref={(el) => (sectionsRef.current[0] = el)}>
         <div className="title-deco">
+          <img 
+          src="title.svg" 
+          className="title-img"
+          alt="Title Decoration"
+          ></img>
           <h1>
             THE SEA ABOVE: <br />
             The Project

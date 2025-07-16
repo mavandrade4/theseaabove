@@ -6,6 +6,8 @@ import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ScrollToPlugin from "gsap/ScrollToPlugin";
+import { AnimationContext } from "../../context/AnimationContext";
+import { useOutletContext } from "react-router-dom";
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
@@ -13,15 +15,16 @@ const TimelineVis = () => {
   const data = useContext(dataContext);
   const groupBy = "year";
   const svgRef = useRef();
-  const containerRef = useRef();
+  const scrollTargetRef = useRef();
   const [useColor, setUseColor] = useState(false);
   const [useWhiteBars, setUseWhiteBars] = useState(false);
-  const [animationDone, setAnimationDone] = useState(false);
+  const { animationDone, setAnimationDone } = useContext(AnimationContext);
   const [annotation, setAnnotation] = useState("");
   const [isPaused, setIsPaused] = useState(false);
   const [skipAnimation, setSkipAnimation] = useState(false);
   const resumeRef = useRef(null);
-  const scrollTweenRef = useRef(null); // NEW: Track scroll tween
+  const scrollTweenRef = useRef(null);
+  const { setHideFooter } = useOutletContext();
 
   const handleResume = () => {
     setAnnotation("");
@@ -47,16 +50,22 @@ const TimelineVis = () => {
     },
   ];
 
+  const annotationIndices = new Set(annotations.map((a) => a.index));
+
   useEffect(() => {
     if (!animationDone) {
       document.body.classList.add("scroll-locked");
+      setHideFooter(true);
     } else {
       document.body.classList.remove("scroll-locked");
+      setHideFooter(false);
     }
-  }, [animationDone]);
+  }, [animationDone, setHideFooter]);
 
   useEffect(() => {
     if (!data || data.length === 0) return;
+
+    let canceled = false;
 
     const filteredData = data.filter(
       (d) => d.type === "satellite" || d.type === "debris"
@@ -86,7 +95,7 @@ const TimelineVis = () => {
       tooltip.style("opacity", 0);
     }
 
-    const initialScrollOffset = 2000;
+    const initialScrollOffset = 1500;
     gsap.set(window, {
       scrollTo: { y: height - window.innerHeight - initialScrollOffset },
     });
@@ -109,7 +118,10 @@ const TimelineVis = () => {
 
     const yAxis = d3
       .axisLeft(yScale)
-      .tickFormat((d) => (d === "unknown" ? "Unknown" : sortedGroups[d] ?? d))
+      .tickFormat((d) => {
+        const label = sortedGroups[Math.floor(d)];
+        return label === "unknown" ? "Unknown" : label;
+      })
       .ticks(sortedGroups.length);
 
     svg
@@ -163,7 +175,7 @@ const TimelineVis = () => {
       cumulativeSat += satellites.length;
       cumulativeDebris += debris.length;
 
-      const barHeight = 8;
+      const barHeight = 5;
       const cumulativeSatWidth = scaleWidth(cumulativeSat);
       const cumulativeDebrisWidth = scaleWidth(cumulativeDebris);
 
@@ -175,10 +187,13 @@ const TimelineVis = () => {
         .attr("height", barHeight)
         .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707")
         .attr("opacity", 0.6)
-        .on("mouseover", function (event) {
-          showTooltip(`Cumulative ${group} count: ${items.length}`, event);
-        })
-        .on("mousemove", function (event) {
+        .on("mouseover", (event) =>
+          showTooltip(
+            `Cumulative satellites by ${group}: ${cumulativeSat}`,
+            event
+          )
+        )
+        .on("mousemove", (event) => {
           tooltip
             .style("left", `${event.pageX + 10}px`)
             .style("top", `${event.pageY - 20}px`);
@@ -193,15 +208,30 @@ const TimelineVis = () => {
         .attr("height", barHeight)
         .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707")
         .attr("opacity", 0.6)
-        .on("mouseover", function (event) {
-          showTooltip(`Cumulative ${group} count: ${items.length}`, event);
-        })
-        .on("mousemove", function (event) {
+        .on("mouseover", (event) =>
+          showTooltip(
+            `Cumulative debris by ${group}: ${cumulativeDebris}`,
+            event
+          )
+        )
+        .on("mousemove", (event) => {
           tooltip
             .style("left", `${event.pageX + 10}px`)
             .style("top", `${event.pageY - 20}px`);
         })
         .on("mouseout", hideTooltip);
+
+      if (i === 0) {
+        svg
+          .append("line")
+          .attr("x1", width / 2)
+          .attr("y1", margin.top - 20)
+          .attr("x2", width / 2)
+          .attr("y2", height - margin.bottom + 20)
+          .attr("stroke", "#999")
+          .attr("stroke-width", 2)
+          .attr("stroke-dasharray", "4 4");
+      }
 
       const maxSpread = (width - margin.left - margin.right) / 2 - 40;
 
@@ -221,15 +251,16 @@ const TimelineVis = () => {
             offsetX = (Math.random() - 0.5) * 300;
           }
 
-          const jitterY = (Math.random() - 0.5) * 100;
+          const jitterY = (Math.random() - 0.5) * 30;
           const x = width / 2 + offsetX;
           const yJittered = y + jitterY + barHeight;
 
           return {
             ...item,
+            year: group,
             x: Math.max(margin.left, Math.min(width - margin.right, x)),
             y: yJittered,
-            r: 3,
+            r: 2,
             color: colorScale(item.country || "unknown"),
             opacity: 0.8,
           };
@@ -240,16 +271,21 @@ const TimelineVis = () => {
       nodes.push(...createPositions(debris, "right"));
     });
 
-    const totalSteps = nodes.length;
-    const scrollRange = height - window.innerHeight - initialScrollOffset;
-    const scrollStep = scrollRange / totalSteps;
+    const scrollTween = gsap.to(window, {
+      scrollTo: { y: 0 },
+      duration: 0.5,
+      ease: "power2.out",
+      paused: true,
+    });
+    scrollTweenRef.current = scrollTween;
 
     const animateNodes = async () => {
       const batchSize = 10;
+      const svgEl = d3.select(svgRef.current);
 
-      if (skipAnimation) {
+      if (skipAnimation || canceled) {
         nodes.forEach((d) => {
-          d3.select(svgRef.current)
+          svgEl
             .append("circle")
             .datum(d)
             .attr("cx", d.x)
@@ -257,44 +293,37 @@ const TimelineVis = () => {
             .attr("r", d.r)
             .attr("fill", "none")
             .attr("stroke", useColor ? d.color : "#5F1E1E")
-            .attr("stroke-width", 1.5)
-            .attr("opacity", d.opacity);
+            .attr("stroke-width", 1)
+            .attr("opacity", d.opacity)
+            .on("mouseover", (event, d) =>
+              showTooltip(
+                `Name: ${d.name || "Unknown"}<br>Type: ${d.type}<br>Country: ${
+                  d.country || "Unknown"
+                }<br>Year: ${d.year}`,
+                event
+              )
+            )
+            .on("mousemove", (event) => {
+              tooltip
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY - 20}px`);
+            })
+            .on("mouseout", hideTooltip);
         });
-
-        d3.select(svgRef.current)
-          .selectAll("circle")
-          .on("mouseover", function (event, d) {
-            showTooltip(
-              `Type: ${d.type}<br/>Country: ${d.country || "Unknown"}`,
-              event
-            );
-          })
-          .on("mousemove", function (event) {
-            tooltip
-              .style("left", `${event.pageX + 10}px`)
-              .style("top", `${event.pageY - 20}px`);
-          })
-          .on("mouseout", hideTooltip);
-
         setAnimationDone(true);
+        setIsPaused(false);
         document.body.classList.remove("scroll-locked");
         return;
       }
 
-      let scrollTween = gsap.to(window, {
-        scrollTo: { y: 0 },
-        duration: 0.5,
-        ease: "power2.out",
-        paused: true,
-      });
-      scrollTweenRef.current = scrollTween;
+      let lastYear = null;
 
-      for (let i = 0; i < totalSteps; i += batchSize) {
-        if (skipAnimation) break;
+      for (let i = 0; i < nodes.length; i += batchSize) {
+        if (canceled || skipAnimation) return;
 
         const batch = nodes.slice(i, i + batchSize);
         batch.forEach((d) => {
-          d3.select(svgRef.current)
+          svgEl
             .append("circle")
             .datum(d)
             .attr("cx", width / 2)
@@ -310,43 +339,27 @@ const TimelineVis = () => {
             .attr("cy", d.y);
         });
 
-        d3.select(svgRef.current)
-          .selectAll("circle")
-          .on("mouseover", function (event, d) {
-            showTooltip(
-              `Type: ${d.type}<br/>Country: ${d.country || "Unknown"}`,
-              event
-            );
-          })
-          .on("mousemove", function (event) {
-            tooltip
-              .style("left", `${event.pageX + 10}px`)
-              .style("top", `${event.pageY - 20}px`);
-          })
-          .on("mouseout", hideTooltip);
+        const currentYear = batch[0].year;
+        if (currentYear !== lastYear) {
+          lastYear = currentYear;
+          const yearIndex = sortedGroups.indexOf(currentYear);
+          const targetY = yScale(yearIndex);
+          scrollTween.vars.scrollTo = { y: targetY - window.innerHeight / 2 };
+          scrollTween.invalidate();
+          scrollTween.restart();
+        }
 
-        const batchCenterY =
-          d3.mean(batch, (d) => d.y) || window.innerHeight / 2;
-
-        const scrollTargetY = Math.max(
-          0,
-          batchCenterY - window.innerHeight / 2
-        );
-
-        scrollTween.vars.scrollTo.y = scrollTargetY;
-        scrollTween.invalidate();
-        scrollTween.restart();
-
-        const annotationObj = annotations.find((a) => a.index === i);
-        if (annotationObj) {
-          setAnnotation(annotationObj.message);
-          setIsPaused(true);
-          if (skipAnimation) break;
-          await new Promise((resolve) => {
-            resumeRef.current = resolve;
-          });
-          setAnnotation("");
-          setIsPaused(false);
+        if (annotationIndices.has(i)) {
+          const annotationObj = annotations.find((a) => a.index === i);
+          if (annotationObj) {
+            setAnnotation(annotationObj.message);
+            setIsPaused(true);
+            await new Promise((resolve) => {
+              resumeRef.current = resolve;
+            });
+            setAnnotation("");
+            setIsPaused(false);
+          }
         }
 
         if (!isPaused) {
@@ -361,18 +374,10 @@ const TimelineVis = () => {
     animateNodes();
 
     return () => {
+      canceled = true;
       ScrollTrigger.getAll().forEach((st) => st.kill());
     };
   }, [data, skipAnimation]);
-
-  useEffect(() => {
-    if (skipAnimation && scrollTweenRef.current) {
-      scrollTweenRef.current.kill();
-      scrollTweenRef.current = null;
-      setAnimationDone(true);
-      document.body.classList.remove("scroll-locked");
-    }
-  }, [skipAnimation]);
 
   useEffect(() => {
     if (!animationDone) return;
@@ -390,21 +395,22 @@ const TimelineVis = () => {
     d3.select(svgRef.current)
       .selectAll("rect")
       .transition()
-      .duration(200)
+      .duration(10)
       .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707");
   }, [useWhiteBars, animationDone]);
 
   return (
-    <div
-      ref={containerRef}
-      className="narrative"
-      style={{ position: "relative" }}
-    >
+    <div className="narrative">
       {!animationDone && !skipAnimation && (
         <button
           className="buttons"
           onClick={() => setSkipAnimation(true)}
-          style={{ position: "fixed", top: "15vh", right: "5vh" }}
+          style={{
+            position: "fixed",
+            bottom: "15vh",
+            right: "5vh",
+            zIndex: 10,
+          }}
         >
           Skip Animation
         </button>
@@ -438,8 +444,45 @@ const TimelineVis = () => {
           </button>
         </div>
       )}
+      {!animationDone && !skipAnimation && (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "25%",
+              transform: "translate(-50%, -50%)",
+              fontSize: "24px",
+              fontWeight: "bold",
+              color: "#666",
+              userSelect: "none",
+              pointerEvents: "none",
+              zIndex: 10,
+            }}
+          >
+            Satellites
+          </div>
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "75%",
+              transform: "translate(-50%, -50%)",
+              fontSize: "24px",
+              fontWeight: "bold",
+              color: "#666",
+              userSelect: "none",
+              pointerEvents: "none",
+              zIndex: 10,
+            }}
+          >
+            Debris
+          </div>
+        </>
+      )}
       <div id="tooltip" className="tooltip"></div>
       <svg ref={svgRef}></svg>
+      <div ref={scrollTargetRef} style={{ height: "1px" }} />
     </div>
   );
 };

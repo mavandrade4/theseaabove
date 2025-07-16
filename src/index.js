@@ -34,7 +34,7 @@ const router = createBrowserRouter([
         element: <Groups />,
       },
       {
-        path: "/project",
+        path: "/data",
         element: <Project />,
       },
       {

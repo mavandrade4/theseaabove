@@ -79,9 +79,26 @@ const Data = () => {
     return Array.from(unique.values());
   };
 
+  const getYearStartIndexes = (data) => {
+    const sortedData = [...data].sort((a, b) => a.year - b.year);
+
+    const yearIndexes = [];
+    let lastYear = null;
+
+    sortedData.forEach((item, index) => {
+      if (item.year !== lastYear) {
+        yearIndexes.push({ year: item.year, index: index + 1 }); // +1 for 1-based index
+        lastYear = item.year;
+      }
+    });
+
+    //console.log("Year Start Indexes:", yearIndexes);
+    return yearIndexes;
+  };
+
   const combinedData = normalizeData(neuraspaceData, spaceDecayData);
-  
-  //console.log(combinedData);
+  const yearStartIndexes = getYearStartIndexes(combinedData);
+
   return combinedData;
 };
 

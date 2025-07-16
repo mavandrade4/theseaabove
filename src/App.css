@@ -41,7 +41,7 @@ h1 {
   border: 3px solid #f0f0f0;
   color: #f0f0f0;
 }
-
+/* -------------------------------------------------------- */ 
 
 /* FRAMES (SECTIONS) -------------------------------------------- */ 
 
@@ -51,49 +51,93 @@ h1 {
   display: flex;
   flex-direction: row;
   width: 100%;
-  height: 100vh;
   overflow: hidden;
+  height: auto;
 }
+/* -------------------------------------------------------- */ 
 
-/* TITLE FRAME AND DECOR -------------------------------------------- */ 
+/* TITLE FRAME -------------------------------------------- */ 
 
 /* Title Frame Style */
+.title-frame {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  opacity: 0;
+  animation: fadeInInPlace 1.5s ease-out forwards;
+}
+
+@keyframes fadeInInPlace {
+  to {
+    opacity: 1;
+  }
+}
+
 .title-deco {
   position: relative;
+  z-index: 1;
   text-align: center;
-  max-width: 90vw;
-  margin: 0 auto;
-  padding: 4vh 2vw;
-  /*border: 2px solid #8b0000;*/
   color: #f0f0f0;
-  font-family: "Unbounded", sans-serif;
-  font-size: clamp(2rem, 5vw, 4rem);
-  line-height: 1.3;
+  font-family: "Unbounded";
+  font-size: 3rem;
+  padding: 20px;
   box-sizing: border-box;
 }
 
-/* Decorative corners using pseudo-elements 
-.title-deco::before,
-.title-deco::after {
-  content: "";
+.title-img {
   position: absolute;
-  width: 20px;
-  height: 20px;
-  border: 2px solid #8b0000;
-}*/
+  top: 0;
+  left: 0;
+  width: 100%;
+  object-fit: cover;
+  z-index: -1;
+}
+
+.title-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  object-fit: cover;
+  z-index: -1;
+
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: center;
+  animation: fadeInSides 1.5s ease-out forwards;
+}
+
+@keyframes fadeInSides {
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.title-deco h1 { 
+  margin: 0;
+  font-size: 3rem;
+  line-height: 1.2;
+}
+/* -------------------------------------------------------- */ 
 
 
-/* -------------------------------------------- */ 
+/* FRAMES -------------------------------------------- */ 
 
 .frame {
-  background-color: #070707;
+  background-color: rgba(7, 7, 7, 0.8); /*#070707;*/
   width: 100%;
-  height: 100vh;
-  margin-top: 5vh;
+  height: auto;
   padding: 3vw;
   box-sizing: border-box;
   position: relative;
   margin: 3vh;
+  margin-top: 5vh;
 }
 
 .image-frame {
@@ -101,16 +145,16 @@ h1 {
   top: 0;
   right: 0;
   height: 100%;
-  width: 80vw;
+  width: auto;
   z-index: 0;
   pointer-events: none;
 }
 
 .frame2 {
-  background-color: #070707;
+    background-color: rgba(7, 7, 7, 0.8); /*#070707;*/  
   width: 100%;
-  height: 100vh;
-  padding: 3vw 40vh 40vh 3vw;
+  height: auto;
+  padding: 3vw 30vh 10vh 3vw;
   box-sizing: border-box;
   position: relative;
   justify-items: right;
@@ -151,3 +195,5 @@ h1 {
 .dot.active {
   background-color: #f0f0f0;
 }
+
+/* -------------------------------------------------------- */ 

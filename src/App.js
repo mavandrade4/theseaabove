@@ -88,7 +88,7 @@ const App = () => {
       </div>
 
       <div className="container">
-        <div className="frame" ref={(el) => (sectionsRef.current[0] = el)}>
+        <div className="frame" ref={(el) => (sectionsRef.current[0] = el)} style={{"height":"100vh"}}>
           <h1
             style={{
               width: "50vw",
