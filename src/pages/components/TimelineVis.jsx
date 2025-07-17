@@ -33,21 +33,22 @@ const TimelineVis = () => {
   };
 
   const annotations = [
-    {
-      index: 200,
-      message:
-        "Annotation 1 Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-    },
-    {
-      index: 800,
-      message:
-        "Annotation 2 Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-    },
-    {
-      index: 1500,
-      message:
-        "Annotation 3 Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-    },
+    { index: 1, message: "(1957) Launch of Sputnik 1: The first artificial satellite by the Soviet Union marks the start of the Space Age. Initiates the era of satellites orbiting Earth, leading to rapid growth in space traffic." },
+    { index: 86, message: "(1961) First human in space (Yuri Gagarin): Space becomes a domain for human activity, intensifying interest in satellite technology and space missions." },
+    { index: 1267, message: "(1965) First documented space debris incident: The US's Transit 4A satellite's upper stage exploded, creating debris. Early indication of future space debris issues." },
+    { index: 11289, message: "(1978) First comprehensive space debris tracking program: The US begins systematic tracking of orbital debris after recognizing increasing collision risks." },
+    { index: 12801, message: "(1981) Start of the Space Shuttle program: Expected to increase launch frequency and reduce costs, but in practice, it limited commercial satellite deployments due to payload constraints and mission focus." },
+    { index: 13123, message: "(1983-1996) Relative slowdown in satellite launches: Space Shuttle payload capacity and scheduling constraints limited launch frequency; 1986 Challenger disaster grounded the Shuttle fleet for nearly three years, causing a major disruption in US launches; Economic and political pressures during the Cold War, especially on the USSR's space program, reduced Soviet launches; Post-Cold War geopolitical shifts led to reduced military satellite investment and a transitional phase in space priorities globally; Commercial satellite market was still developing and limited by costs and technology; Overall, fewer satellites were launched, slowing the growth of space traffic during this period." },
+    { index: 13503, message: "(1990) Launch of Hubble Space Telescope: An important satellite that, while operational, contributes to growing numbers of large, expensive assets in orbit." },
+    { index: 15386, message: "(1996) First collision between catalogued space objects predicted: Highlights growing congestion in certain orbital zones." },
+    { index: 19831, message: "(2007) Chinese anti-satellite missile test: China destroys its Fengyun-1C weather satellite, creating over 3,000 pieces of trackable debris — the largest debris-creating event to date, drastically worsening space pollution." },
+    { index: 20226, message: "(2009) Iridium 33 and Cosmos 2251 collision: The first accidental collision between two intact satellites creates hundreds of debris pieces, showing real collision risks." },
+    { index: 20386, message: "(2010) Rapid growth of mega-constellations planned (e.g., SpaceX Starlink, OneWeb): Thousands of new satellites planned to provide global internet, dramatically increasing space traffic and debris risk." },
+    { index: 21187, message: "(2013) Launch of SpaceX's Starlink program begins (2019 for first batch): Commercial space traffic surges with large constellations, sparking debate about orbital crowding." },
+    { index: 21411, message: "(2014) International guidelines for debris mitigation adopted: Spacefaring nations agree on voluntary best practices to limit debris generation and improve satellite end-of-life disposal." },
+    { index: 23178, message: "(2019) Increase in satellite launches due to mega-constellations: Space traffic grows exponentially, leading to concerns about collision risk and long-term sustainability." },
+    { index: 24841, message: "(2021) First active debris removal missions proposed and tested: Projects like ClearSpace-1 planned to address the growing problem of large debris pieces." },
+    { index: 26439, message: "(2023) Regulatory discussions intensify globally: Efforts to regulate satellite launches, debris mitigation, and traffic management increase due to risks posed by congestion, especially in low Earth orbit (LEO)." },
   ];
 
   const annotationIndices = new Set(annotations.map((a) => a.index));
@@ -280,96 +281,123 @@ const TimelineVis = () => {
     scrollTweenRef.current = scrollTween;
 
     const animateNodes = async () => {
-      const batchSize = 10;
-      const svgEl = d3.select(svgRef.current);
+  const batchSize = 10;
+  const svgEl = d3.select(svgRef.current);
 
-      if (skipAnimation || canceled) {
-        nodes.forEach((d) => {
-          svgEl
-            .append("circle")
-            .datum(d)
-            .attr("cx", d.x)
-            .attr("cy", d.y)
-            .attr("r", d.r)
-            .attr("fill", "none")
-            .attr("stroke", useColor ? d.color : "#5F1E1E")
-            .attr("stroke-width", 1)
-            .attr("opacity", d.opacity)
-            .on("mouseover", (event, d) =>
-              showTooltip(
-                `Name: ${d.name || "Unknown"}<br>Type: ${d.type}<br>Country: ${
-                  d.country || "Unknown"
-                }<br>Year: ${d.year}`,
-                event
-              )
-            )
-            .on("mousemove", (event) => {
-              tooltip
-                .style("left", `${event.pageX + 10}px`)
-                .style("top", `${event.pageY - 20}px`);
-            })
-            .on("mouseout", hideTooltip);
-        });
-        setAnimationDone(true);
-        setIsPaused(false);
-        document.body.classList.remove("scroll-locked");
-        return;
-      }
+  if (skipAnimation || canceled) {
+    // Skip animation logic (unchanged)
+    nodes.forEach((d) => {
+      svgEl
+        .append("circle")
+        .datum(d)
+        .attr("cx", d.x)
+        .attr("cy", d.y)
+        .attr("r", d.r)
+        .attr("fill", "none")
+        .attr("stroke", useColor ? d.color : "#5F1E1E")
+        .attr("stroke-width", 1)
+        .attr("opacity", d.opacity)
+        .on("mouseover", (event, d) =>
+          showTooltip(
+            `Name: ${d.name || "Unknown"}<br>Type: ${d.type}<br>Country: ${
+              d.country || "Unknown"
+            }<br>Year: ${d.year}`,
+            event
+          )
+        )
+        .on("mousemove", (event) => {
+          tooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", hideTooltip);
+    });
+    setAnimationDone(true);
+    setIsPaused(false);
+    document.body.classList.remove("scroll-locked");
+    return;
+  }
 
-      let lastYear = null;
+  let lastYear = null;
+  let lastProcessedIndex = -1;
+  let shouldContinue = true;
 
-      for (let i = 0; i < nodes.length; i += batchSize) {
-        if (canceled || skipAnimation) return;
+  // Process nodes in batches
+  for (let i = 0; i < nodes.length && shouldContinue; i += batchSize) {
+    if (canceled || skipAnimation) return;
 
-        const batch = nodes.slice(i, i + batchSize);
-        batch.forEach((d) => {
-          svgEl
-            .append("circle")
-            .datum(d)
-            .attr("cx", width / 2)
-            .attr("cy", height)
-            .attr("r", d.r)
-            .attr("fill", "none")
-            .attr("stroke", "#5F1E1E")
-            .attr("stroke-width", 1.5)
-            .attr("opacity", d.opacity)
-            .transition()
-            .duration(50)
-            .attr("cx", d.x)
-            .attr("cy", d.y);
-        });
+    const batch = nodes.slice(i, i + batchSize);
+    
+    // Check for annotations in this range
+    const annotationsInRange = annotations.filter(a => 
+      a.index >= i && a.index < i + batchSize && a.index > lastProcessedIndex
+    );
 
-        const currentYear = batch[0].year;
-        if (currentYear !== lastYear) {
-          lastYear = currentYear;
-          const yearIndex = sortedGroups.indexOf(currentYear);
-          const targetY = yScale(yearIndex);
-          scrollTween.vars.scrollTo = { y: targetY - window.innerHeight / 2 };
-          scrollTween.invalidate();
-          scrollTween.restart();
-        }
+    // Process annotations first
+    for (const annotation of annotationsInRange) {
+      setAnnotation(annotation.message);
+      setIsPaused(true);
+      await new Promise((resolve) => {
+        resumeRef.current = () => {
+          resolve();
+          setAnnotation("");
+          setIsPaused(false);
+        };
+      });
+      lastProcessedIndex = annotation.index;
+    }
 
-        if (annotationIndices.has(i)) {
-          const annotationObj = annotations.find((a) => a.index === i);
-          if (annotationObj) {
-            setAnnotation(annotationObj.message);
-            setIsPaused(true);
-            await new Promise((resolve) => {
-              resumeRef.current = resolve;
-            });
-            setAnnotation("");
-            setIsPaused(false);
-          }
-        }
+    // Animate the current batch
+    batch.forEach((d) => {
+      svgEl
+        .append("circle")
+        .datum(d)
+        .attr("cx", width / 2)
+        .attr("cy", height)
+        .attr("r", d.r)
+        .attr("fill", "none")
+        .attr("stroke", "#5F1E1E")
+        .attr("stroke-width", 1.5)
+        .attr("opacity", d.opacity)
+        .on("mouseover", (event, d) =>
+          showTooltip(
+            `Name: ${d.name || "Unknown"}<br>Type: ${d.type}<br>Country: ${
+              d.country || "Unknown"
+            }<br>Year: ${d.year}`,
+            event
+          )
+        )
+        .on("mousemove", (event) => {
+          tooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", hideTooltip)
+        .transition()
+        .duration(50)
+        .attr("cx", d.x)
+        .attr("cy", d.y);
+    });
 
-        if (!isPaused) {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-        }
-      }
+    // Handle year-based scrolling
+    const currentYear = batch[0].year;
+    if (currentYear !== lastYear) {
+      lastYear = currentYear;
+      const yearIndex = sortedGroups.indexOf(currentYear);
+      const targetY = yScale(yearIndex);
+      scrollTween.vars.scrollTo = { y: targetY - window.innerHeight / 2 };
+      scrollTween.invalidate();
+      scrollTween.restart();
+    }
 
-      setAnimationDone(true);
-      document.body.classList.remove("scroll-locked");
-    };
+    if (!isPaused) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  }
+
+  setAnimationDone(true);
+  document.body.classList.remove("scroll-locked");
+};
 
     animateNodes();
 
