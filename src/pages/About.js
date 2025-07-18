@@ -88,10 +88,10 @@ const About = () => {
 
       <div className="title-frame" ref={(el) => (sectionsRef.current[0] = el)}>
         <div className="title-deco">
-          <img 
-          src="title.svg" 
-          className="title-img"
-          alt="Title Decoration"
+          <img
+            src="title.svg"
+            className="title-img"
+            alt="Title Decoration"
           ></img>
           <h1>
             ABOUT US:
@@ -101,14 +101,21 @@ const About = () => {
         </div>
       </div>
 
-      <div className="container">
+      <div
+        style={{ backgroundColor: "rgba(2,0,34, 0.5)", marginTop: "2rem" }}
+        className="container"
+      >
         <img
           src="neura.png"
           className="frame-image"
           alt="Neuraspace Logo"
           style={{ height: "50vh", opacity: "0.8", margin: "20vh" }}
         ></img>
-        <div className="frame2" ref={(el) => (sectionsRef.current[1] = el)}>
+        <div
+          className="frame2"
+          style={{ backgroundColor: "transparent" }}
+          ref={(el) => (sectionsRef.current[1] = el)}
+        >
           <h1>NEURASPACE</h1>
           <div className="text-frame">
             <p>
@@ -135,8 +142,15 @@ const About = () => {
           </div>
         </div>
       </div>
-      <div className="container">
-        <div className="frame" ref={(el) => (sectionsRef.current[2] = el)}>
+      <div
+        className="container"
+        style={{ backgroundColor: "rgba(2,0,34, 0.5)", marginTop: "2rem" }}
+      >
+        <div
+          className="frame"
+          style={{ backgroundColor: "transparent" }}
+          ref={(el) => (sectionsRef.current[2] = el)}
+        >
           <h1>CISUC/UC</h1>
           <div className="text-frame">
             <p>
@@ -169,25 +183,30 @@ const About = () => {
           className="frame-image"
           alt="CISUC Logo"
           style={{
-            maxHeight: "60vh",
-            maxWidth: "100%",
-            width: "auto",
             height: "auto",
+            width: "40vw",
             objectFit: "contain",
+            display: "block",
+            marginRight: "10vw",
             opacity: 0.8,
-            margin: "20vh",
           }}
         ></img>
       </div>
-
-      <div className="container">
+      <div
+        className="container"
+        style={{ backgroundColor: "rgba(2,0,34, 0.5)", marginTop: "2rem" }}
+      >
         <img
           src="me.jpg"
           className="frame-image"
           alt="Mariana"
           style={{ height: "50vh", opacity: "0.8", margin: "20vh" }}
         ></img>
-        <div className="frame2" ref={(el) => (sectionsRef.current[3] = el)}>
+        <div
+          className="frame2"
+          style={{ backgroundColor: "transparent" }}
+          ref={(el) => (sectionsRef.current[3] = el)}
+        >
           <h1>ABOUT ME</h1>
           <div className="text-frame">
             <p>

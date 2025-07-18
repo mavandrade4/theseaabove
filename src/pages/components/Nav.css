@@ -9,24 +9,28 @@
 
 /* NAVBAR STYLING */
 .navbar {
-  background: #020022;
+  background: #070707;
   display: flex;
   justify-content: left;
-  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 0 rgba(95, 30, 30, 0.7);
   width: 100%;
-  transition: transform 0.3s ease;
-  transform: translateY(-100%);
+  /* Remove transitions and transforms */
+  transform: translateY(0);
+  opacity: 1;
 }
 
-/* Show nav on hover */
+/* Remove these since nav is always visible */
+/*
 .navbar.shown {
   transform: translateY(0);
+  opacity: 1;
 }
 
-/* Hide nav by default */
 .navbar.hidden {
   transform: translateY(-100%);
+  opacity: 0;
 }
+*/
 
 .navbar-links {
   display: flex;
@@ -38,9 +42,9 @@
   color: #f0f0f0;
   text-transform: uppercase;
   font-weight: 700;
-  padding: 0.5rem 1rem 0.5rem 1rem;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.3s ease, background 0.3s ease;
   border: none;
   box-shadow: none;
   font-family: "JetBrains Mono";

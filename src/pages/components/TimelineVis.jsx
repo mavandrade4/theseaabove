@@ -440,7 +440,7 @@ const TimelineVis = () => {
             zIndex: 10,
           }}
         >
-          Skip Animation
+          Skip
         </button>
       )}
       {animationDone && (
@@ -448,14 +448,14 @@ const TimelineVis = () => {
           <button
             className="buttons"
             onClick={() => setUseColor(!useColor)}
-            style={{ marginTop: "50px" }}
+            style={{ marginTop: "5.5rem" }}
           >
             Toggle Color Separation
           </button>
           <button
             className="buttons"
             onClick={() => setUseWhiteBars(!useWhiteBars)}
-            style={{ marginTop: "50px" }}
+            style={{ marginTop: "5.5rem" }}
           >
             Toggle Bar Color
           </button>

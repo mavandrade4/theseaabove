@@ -10,6 +10,7 @@ const App = () => {
   const sectionsRef = useRef([]);
   const currentIndex = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const scrollToSection = (index) => {
     const section = sectionsRef.current[index];
@@ -33,47 +34,106 @@ const App = () => {
   };
 
   useEffect(() => {
-    const sections = sectionsRef.current;
+    // Set a minimum loading time (e.g., 1.5 seconds)
+    const minLoadingTime = 1500;
+    const loadingStartTime = performance.now();
 
-    Observer.create({
-      target: window,
-      type: "wheel,touch",
-      onDown: () => {
-        if (currentIndex.current < sections.length - 1) {
-          scrollToSection(currentIndex.current + 1);
+    const loadAssets = async () => {
+      try {
+        // Here you can preload critical assets if needed
+        await Promise.all([
+          // Example: preload your anim1.gif
+          new Promise((resolve) => {
+            const img = new Image();
+            img.src = "anim1.gif";
+            img.onload = resolve;
+          }),
+        ]);
+      } catch (error) {
+        console.error("Error loading assets:", error);
+      } finally {
+        const loadingEndTime = performance.now();
+        const loadingDuration = loadingEndTime - loadingStartTime;
+        
+        // Ensure the loading screen shows for at least the minimum time
+        if (loadingDuration < minLoadingTime) {
+          setTimeout(() => {
+            setIsLoading(false);
+          }, minLoadingTime - loadingDuration);
+        } else {
+          setIsLoading(false);
         }
-      },
-      onUp: () => {
-        if (currentIndex.current > 0) {
-          scrollToSection(currentIndex.current - 1);
-        }
-      },
-      wheelSpeed: 1,
-      tolerance: 15,
-      preventDefault: true,
-    });
+      }
+    };
 
-    sections.forEach((section, i) => {
-      ScrollTrigger.create({
-        trigger: section,
-        start: "top center",
-        end: "bottom center",
-        onEnter: () => {
-          setActiveIndex(i);
-          currentIndex.current = i;
+    loadAssets();
+
+    // Only initialize the rest after loading is complete
+    if (!isLoading) {
+      const sections = sectionsRef.current;
+
+      Observer.create({
+        target: window,
+        type: "wheel,touch",
+        onDown: () => {
+          if (currentIndex.current < sections.length - 1) {
+            scrollToSection(currentIndex.current + 1);
+          }
         },
-        onEnterBack: () => {
-          setActiveIndex(i);
-          currentIndex.current = i;
+        onUp: () => {
+          if (currentIndex.current > 0) {
+            scrollToSection(currentIndex.current - 1);
+          }
         },
+        wheelSpeed: 1,
+        tolerance: 15,
+        preventDefault: true,
       });
-    });
 
-    requestAnimationFrame(() => {
-      scrollToSection(0);
-      document.body.classList.remove("show-nav");
-    });
-  }, []);
+      gsap.utils.toArray(".fade-in-text").forEach((el) => {
+        gsap.from(el, {
+          opacity: 0,
+          y: 30,
+          duration: 1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: el,
+            start: "top 80%",
+            toggleActions: "play none none none",
+          },
+        });
+      });
+
+      sections.forEach((section, i) => {
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top center",
+          end: "bottom center",
+          onEnter: () => {
+            setActiveIndex(i);
+            currentIndex.current = i;
+          },
+          onEnterBack: () => {
+            setActiveIndex(i);
+            currentIndex.current = i;
+          },
+        });
+      });
+
+      requestAnimationFrame(() => {
+        scrollToSection(0);
+        document.body.classList.remove("show-nav");
+      });
+    }
+  }, [isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        <img src="anim8-fade.gif" alt="Loading..." />
+      </div>
+    );
+  }
 
   return (
     <div className="App">
@@ -88,19 +148,26 @@ const App = () => {
       </div>
 
       <div className="container">
-        <div className="frame" ref={(el) => (sectionsRef.current[0] = el)} style={{"height":"100vh"}}>
+        <div
+          className="frame"
+          ref={(el) => (sectionsRef.current[0] = el)}
+          style={{ height: "100vh", backgroundColor: "#070707" }}
+        >
           <h1
             style={{
               width: "50vw",
               position: "relative",
               "z-index": "5",
-              margin: "10",
+              marginTop: "20vh",
             }}
           >
             THE SEA ABOVE
           </h1>
-          <div className="text-frame">
-            <p>
+          <div
+            className="text-frame"
+            style={{ "z-index": "5", fontSize: "1.3rem" }}
+          >
+            <p className="fade-in-text">
               “Imagine how dangerous sailing the high seas would be if all the
               ships ever lost in history were still drifting on top of the
               water”
@@ -110,11 +177,16 @@ const App = () => {
               START
             </Link>
           </div>
-          <img src="anim1.gif" alt="Placeholder" className="image-frame" style={{"right":"0"}}/>
+          <img
+            src="anim1.gif"
+            alt="Sputnik 1"
+            className="image-frame"
+            style={{ right: "0" }}
+          />
         </div>
       </div>
 
-      <div className="frame2" ref={(el) => (sectionsRef.current[1] = el)}>
+      <div className="frame" ref={(el) => (sectionsRef.current[1] = el)}>
         <h1>CONTEXT</h1>
         <div className="text-frame">
           <p>
@@ -151,7 +223,7 @@ const App = () => {
         </Link>
       </div>
 
-      <div className="frame2" ref={(el) => (sectionsRef.current[3] = el)}>
+      <div className="frame" ref={(el) => (sectionsRef.current[3] = el)}>
         <h1>ABOUT</h1>
         <div className="text-frame">
           <p>
