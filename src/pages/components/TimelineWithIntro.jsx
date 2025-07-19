@@ -58,7 +58,7 @@ const TimelineWithIntro = () => {
           )}
           <video
             ref={videoRef}
-            src="/anim_tudo_1.mp4"
+            src={`${process.env.PUBLIC_URL}/anim_tudo_1.mp4`}
             type="video/mp4"
             autoPlay
             controls={false}
