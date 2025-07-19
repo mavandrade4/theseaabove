@@ -5,7 +5,7 @@ import App from './App';
 import "./App.css";
 import reportWebVitals from './reportWebVitals';
 import {
-  createBrowserRouter,
+  createHashRouter,  // Changed from createBrowserRouter
   RouterProvider,
 } from "react-router-dom";
 
@@ -16,7 +16,7 @@ import Context from './pages/Context';
 import About from './pages/About';
 import Project from './pages/Project';
 
-const router = createBrowserRouter([
+const router = createHashRouter([  // Changed to createHashRouter
   {
     path: "/",
     element: <Root />,
@@ -47,7 +47,6 @@ const router = createBrowserRouter([
       },
     ]
   },
- 
 ]);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
