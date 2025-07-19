@@ -1,22 +1,23 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
 import "./App.css";
 import reportWebVitals from './reportWebVitals';
 import {
-  createHashRouter,  // Changed from createBrowserRouter
+  createHashRouter, 
   RouterProvider,
 } from "react-router-dom";
-
+import LoadingScreen from "./pages/components/LoadingScreen";
 import Root from './root';
-import Timeline from './pages/Timeline';
-import Groups from './pages/Groups';
-import Context from './pages/Context';
-import About from './pages/About';
-import Project from './pages/Project';
+import App from './App';
 
-const router = createHashRouter([  // Changed to createHashRouter
+const Timeline = React.lazy(() => import('./pages/Timeline'));
+const Groups = React.lazy(() => import('./pages/Groups'));
+const Context = React.lazy(() => import('./pages/Context'));
+const About = React.lazy(() => import('./pages/About'));
+const Project = React.lazy(() => import('./pages/Project'));
+
+const router = createHashRouter([
   {
     path: "/",
     element: <Root />,
@@ -27,29 +28,49 @@ const router = createHashRouter([  // Changed to createHashRouter
       },
       {
         path: "/timeline",
-        element: <Timeline />,
+        element: (
+          <Suspense fallback={<LoadingScreen />}>
+            <Timeline />
+          </Suspense>
+        ),
       },
       {
         path: "/groups",
-        element: <Groups />,
+        element: (
+          <Suspense fallback={<LoadingScreen />}>
+            <Groups />
+          </Suspense>
+        ),
       },
       {
         path: "/data",
-        element: <Project />,
+        element: (
+          <Suspense fallback={<LoadingScreen />}>
+            <Project />
+          </Suspense>
+        ),
       },
       {
         path: "/context",
-        element: <Context />,
+        element: (
+          <Suspense fallback={<LoadingScreen />}>
+            <Context />
+          </Suspense>
+        ),
       },
       {
         path: "/about",
-        element: <About />,
+        element: (
+          <Suspense fallback={<LoadingScreen />}>
+            <About />
+          </Suspense>
+        ),
       },
-    ]
+    ],
   },
 ]);
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <RouterProvider router={router} />

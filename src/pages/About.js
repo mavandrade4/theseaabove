@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import "../App.css";
 import { gsap } from "gsap";
 import { ScrollToPlugin, ScrollTrigger, Observer } from "gsap/all";
+import LoadingScreen from './components/LoadingScreen';
 
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger, Observer);
 
@@ -9,6 +10,7 @@ const About = () => {
   const sectionsRef = useRef([]);
   const currentIndex = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const scrollToSection = (index) => {
     const section = sectionsRef.current[index];
@@ -21,58 +23,57 @@ const About = () => {
       onComplete: () => {
         currentIndex.current = index;
         setActiveIndex(index);
-
-        if (index === 0) {
-          document.body.classList.remove("show-nav");
-        } else {
-          document.body.classList.add("show-nav");
-        }
+        document.body.classList.toggle("show-nav", index !== 0);
       },
     });
   };
 
   useEffect(() => {
-    const sections = sectionsRef.current;
+    const minLoadingTime = 1000; // Shorter for subsequent pages
+    const loadingStartTime = performance.now();
 
-    Observer.create({
-      target: window,
-      type: "wheel,touch",
-      onDown: () => {
-        if (currentIndex.current < sections.length - 1) {
-          scrollToSection(currentIndex.current + 1);
-        }
-      },
-      onUp: () => {
-        if (currentIndex.current > 0) {
-          scrollToSection(currentIndex.current - 1);
-        }
-      },
-      wheelSpeed: 1,
-      tolerance: 15,
-      preventDefault: true,
-    });
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, minLoadingTime);
 
-    sections.forEach((section, i) => {
-      ScrollTrigger.create({
-        trigger: section,
-        start: "top center",
-        end: "bottom center",
-        onEnter: () => {
-          setActiveIndex(i);
-          currentIndex.current = i;
-        },
-        onEnterBack: () => {
-          setActiveIndex(i);
-          currentIndex.current = i;
-        },
-      });
-    });
-
-    requestAnimationFrame(() => {
-      scrollToSection(0);
-      document.body.classList.remove("show-nav");
-    });
+    return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      const sections = sectionsRef.current;
+
+      Observer.create({
+        target: window,
+        type: "wheel,touch",
+        onDown: () => currentIndex.current < sections.length - 1 && scrollToSection(currentIndex.current + 1),
+        onUp: () => currentIndex.current > 0 && scrollToSection(currentIndex.current - 1),
+        wheelSpeed: 1,
+        tolerance: 15,
+        preventDefault: true,
+      });
+
+      sections.forEach((section, i) => {
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top center",
+          end: "bottom center",
+          onEnter: () => {
+            setActiveIndex(i);
+            currentIndex.current = i;
+          },
+          onEnterBack: () => {
+            setActiveIndex(i);
+            currentIndex.current = i;
+          },
+        });
+      });
+
+      requestAnimationFrame(() => scrollToSection(0));
+    }
+  }, [isLoading]);
+
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <div className="App">
@@ -89,9 +90,8 @@ const About = () => {
       <div className="title-frame" ref={(el) => (sectionsRef.current[0] = el)}>
         <div className="title-deco">
           <img
-            src="title.svg"
+            src={process.env.PUBLIC_URL + "/title.svg"} 
             className="title-img"
-            alt="Title Decoration"
           ></img>
           <h1>
             ABOUT US:
@@ -106,7 +106,7 @@ const About = () => {
         className="container"
       >
         <img
-          src="neura.png"
+          src={process.env.PUBLIC_URL + "/neura.png"}
           className="frame-image"
           alt="Neuraspace Logo"
           style={{ height: "50vh", opacity: "0.8", margin: "20vh" }}
@@ -179,7 +179,7 @@ const About = () => {
           </div>
         </div>
         <img
-          src="cisuc.png"
+          src={process.env.PUBLIC_URL + "/cisuc.png"}
           className="frame-image"
           alt="CISUC Logo"
           style={{
@@ -197,7 +197,7 @@ const About = () => {
         style={{ backgroundColor: "rgba(2,0,34, 0.5)", marginTop: "2rem" }}
       >
         <img
-          src="me.jpg"
+          src={process.env.PUBLIC_URL + "/me.jpg"}
           className="frame-image"
           alt="Mariana"
           style={{ height: "50vh", opacity: "0.8", margin: "20vh" }}

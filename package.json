@@ -1,8 +1,8 @@
 {
-  "name": "dissertation",
+  "name": "The Sea Above",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://mavandrade4.github.io/dissertation",
+  "homepage": "https://mavandrade4.github.io/theseaabove/",
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -18,7 +18,7 @@
     "react-dom": "^18.3.1",
     "react-dotenv": "^0.1.3",
     "react-router-dom": "^6.17.0",
-    "react-scripts": "^3.0.1",
+    "react-scripts": "^5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -29,7 +29,8 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "build:win": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
-    "build:mac": "export NODE_OPTIONS=--openssl-legacy-provider && react-scripts build"
+    "build:mac": "export NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
+    "serve": "serve -s build"
   },
   "eslintConfig": {
     "extends": [

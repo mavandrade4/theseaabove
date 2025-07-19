@@ -3,6 +3,7 @@ import "./App.css";
 import { gsap } from "gsap";
 import { ScrollToPlugin, ScrollTrigger, Observer } from "gsap/all";
 import { Link } from "react-router-dom";
+import LoadingScreen from './pages/components/LoadingScreen';
 
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger, Observer);
 
@@ -23,68 +24,44 @@ const App = () => {
       onComplete: () => {
         currentIndex.current = index;
         setActiveIndex(index);
-
-        if (index === 0) {
-          document.body.classList.remove("show-nav");
-        } else {
-          document.body.classList.add("show-nav");
-        }
+        document.body.classList.toggle("show-nav", index !== 0);
       },
     });
   };
 
   useEffect(() => {
-    // Set a minimum loading time (e.g., 1.5 seconds)
     const minLoadingTime = 1500;
     const loadingStartTime = performance.now();
 
     const loadAssets = async () => {
       try {
-        // Here you can preload critical assets if needed
         await Promise.all([
-          // Example: preload your anim1.gif
           new Promise((resolve) => {
             const img = new Image();
-            img.src = "anim1.gif";
+            img.src = process.env.PUBLIC_URL + "/anim1.gif";
             img.onload = resolve;
           }),
         ]);
       } catch (error) {
         console.error("Error loading assets:", error);
       } finally {
-        const loadingEndTime = performance.now();
-        const loadingDuration = loadingEndTime - loadingStartTime;
-        
-        // Ensure the loading screen shows for at least the minimum time
-        if (loadingDuration < minLoadingTime) {
-          setTimeout(() => {
-            setIsLoading(false);
-          }, minLoadingTime - loadingDuration);
-        } else {
-          setIsLoading(false);
-        }
+        const remainingTime = Math.max(0, minLoadingTime - (performance.now() - loadingStartTime));
+        setTimeout(() => setIsLoading(false), remainingTime);
       }
     };
 
     loadAssets();
+  }, []);
 
-    // Only initialize the rest after loading is complete
+  useEffect(() => {
     if (!isLoading) {
       const sections = sectionsRef.current;
 
       Observer.create({
         target: window,
         type: "wheel,touch",
-        onDown: () => {
-          if (currentIndex.current < sections.length - 1) {
-            scrollToSection(currentIndex.current + 1);
-          }
-        },
-        onUp: () => {
-          if (currentIndex.current > 0) {
-            scrollToSection(currentIndex.current - 1);
-          }
-        },
+        onDown: () => currentIndex.current < sections.length - 1 && scrollToSection(currentIndex.current + 1),
+        onUp: () => currentIndex.current > 0 && scrollToSection(currentIndex.current - 1),
         wheelSpeed: 1,
         tolerance: 15,
         preventDefault: true,
@@ -120,20 +97,11 @@ const App = () => {
         });
       });
 
-      requestAnimationFrame(() => {
-        scrollToSection(0);
-        document.body.classList.remove("show-nav");
-      });
+      requestAnimationFrame(() => scrollToSection(0));
     }
   }, [isLoading]);
 
-  if (isLoading) {
-    return (
-      <div className="loading-screen">
-        <img src="anim8-fade.gif" alt="Loading..." />
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <div className="App">
@@ -146,7 +114,6 @@ const App = () => {
           />
         ))}
       </div>
-
       <div className="container">
         <div
           className="frame"
@@ -157,7 +124,7 @@ const App = () => {
             style={{
               width: "50vw",
               position: "relative",
-              "z-index": "5",
+              zIndex: "5",
               marginTop: "20vh",
             }}
           >
@@ -165,12 +132,12 @@ const App = () => {
           </h1>
           <div
             className="text-frame"
-            style={{ "z-index": "5", fontSize: "1.3rem" }}
+            style={{ zIndex: "5", fontSize: "1.3rem" }}
           >
             <p className="fade-in-text">
-              “Imagine how dangerous sailing the high seas would be if all the
+              "Imagine how dangerous sailing the high seas would be if all the
               ships ever lost in history were still drifting on top of the
-              water”
+              water"
             </p>
             <p>ESA Director General Jan Wörner 2019</p>
             <Link className="buttons" to="/timeline">
@@ -178,7 +145,7 @@ const App = () => {
             </Link>
           </div>
           <img
-            src="anim1.gif"
+            src={process.env.PUBLIC_URL + "/anim1.gif"} 
             alt="Sputnik 1"
             className="image-frame"
             style={{ right: "0" }}
@@ -200,7 +167,7 @@ const App = () => {
             in place to clean up and manage this shared space more sustainably.
           </p>
         </div>
-        <Link className="buttons" Link to="/context">
+        <Link className="buttons" to="/context">
           KNOW MORE
         </Link>
       </div>
@@ -218,7 +185,7 @@ const App = () => {
             together to power the visual experience.
           </p>
         </div>
-        <Link className="buttons" Link to="/project">
+        <Link className="buttons" to="/project">
           KNOW MORE
         </Link>
       </div>
@@ -236,7 +203,7 @@ const App = () => {
             this topic more accessible matters now more than ever.
           </p>
         </div>
-        <Link className="buttons" Link to="/about">
+        <Link className="buttons" to="/about">
           KNOW MORE
         </Link>
       </div>
