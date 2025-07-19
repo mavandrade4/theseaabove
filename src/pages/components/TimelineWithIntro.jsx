@@ -4,6 +4,8 @@ import TimelineVis from "./TimelineVis";
 const TimelineWithIntro = () => {
   const [videoEnded, setVideoEnded] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [volume, setVolume] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef(null);
 
@@ -25,6 +27,39 @@ const TimelineWithIntro = () => {
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
   };
+
+  // Toggle play/pause
+  const togglePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  // Handle volume change
+  const handleVolumeChange = (e) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+      setIsMuted(newVolume === 0);
+    }
+  };
+
+  // Sync volume with mute state
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isMuted) {
+        videoRef.current.volume = 0;
+      } else {
+        videoRef.current.volume = volume;
+      }
+    }
+  }, [isMuted, volume]);
 
   return (
     <>
@@ -53,12 +88,12 @@ const TimelineWithIntro = () => {
                 fontWeight: "bold",
               }}
             >
-              Loading video...
+            <img src="anim8-fade.gif"></img>
             </div>
           )}
           <video
             ref={videoRef}
-            src={`${process.env.PUBLIC_URL}/anim_tudo_1.mp4`}
+            src={"video.mp4"}
             type="video/mp4"
             autoPlay
             controls={false}
@@ -71,6 +106,8 @@ const TimelineWithIntro = () => {
             }}
             onEnded={() => setVideoEnded(true)}
             onLoadedData={handleLoadedData}
+            onPause={() => setIsPlaying(false)}
+            onPlay={() => setIsPlaying(true)}
           />
 
           <div
@@ -78,17 +115,18 @@ const TimelineWithIntro = () => {
               marginTop: 10,
               display: "flex",
               gap: "1rem",
+              alignItems: "center",
             }}
           >
             <button
-              onClick={skipIntro}
+              onClick={togglePlayPause}
               style={{
                 padding: "0.5rem 1rem",
                 fontSize: "1rem",
                 cursor: "pointer",
               }}
             >
-              Skip Intro
+              {isPlaying ? "Pause" : "Play"}
             </button>
 
             <button
@@ -100,6 +138,31 @@ const TimelineWithIntro = () => {
               }}
             >
               {isMuted ? "Unmute" : "Mute"}
+            </button>
+
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={isMuted ? 0 : volume}
+              onChange={handleVolumeChange}
+              style={{
+                width: "100px",
+                cursor: "pointer",
+              }}
+            />
+
+            <button
+              onClick={skipIntro}
+              style={{
+                padding: "0.5rem 1rem",
+                fontSize: "1rem",
+                cursor: "pointer",
+                marginLeft: "auto",
+              }}
+            >
+              Skip Intro
             </button>
           </div>
         </div>
