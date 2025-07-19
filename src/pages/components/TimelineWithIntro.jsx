@@ -59,6 +59,7 @@ const TimelineWithIntro = () => {
           <video
             ref={videoRef}
             src="/anim_tudo_1.mp4"
+            type="video/mp4"
             autoPlay
             controls={false}
             muted={isMuted}
