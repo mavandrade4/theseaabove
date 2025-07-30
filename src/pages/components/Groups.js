@@ -1,5 +1,5 @@
 import React from "react";
-import BubbleChart from "./components/BubbleChart";
+import BubbleChart from "./BubbleChart";
 import "./Groups.css";
 
 const Groups = () => {

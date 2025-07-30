@@ -7,21 +7,17 @@ const TimelineWithIntro = () => {
   const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef(null);
 
-  // When video metadata is loaded, stop loading spinner
   const handleLoadedData = () => {
     setIsLoading(false);
   };
 
-  // Skip intro handler
   const skipIntro = () => {
     setVideoEnded(true);
-    // Pause video if still playing
     if (videoRef.current) {
       videoRef.current.pause();
     }
   };
 
-  // Toggle mute/unmute
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
   };
@@ -42,6 +38,8 @@ const TimelineWithIntro = () => {
             alignItems: "center",
             flexDirection: "column",
             zIndex: 1000,
+            padding: "20px",
+            boxSizing: "border-box",
           }}
         >
           {isLoading && (
@@ -56,32 +54,47 @@ const TimelineWithIntro = () => {
               Loading video...
             </div>
           )}
-          <video
-            ref={videoRef}
-            src={`${process.env.PUBLIC_URL}/video.mp4`}
-            
-            autoPlay
-            controls={false}
-            muted={isMuted}
-            style={{
-              maxWidth: "100vw",
-              maxHeight: "100vh",
-              objectFit: "contain",
-              backgroundColor: "black",
-            }}
-            onEnded={() => setVideoEnded(true)}
-            onLoadedData={handleLoadedData}
-          />
+          
+          <div style={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            overflow: "hidden"
+          }}>
+            <video
+              ref={videoRef}
+              src={`${process.env.PUBLIC_URL}/video.mp4`}
+              autoPlay
+              controls={false}
+              muted={isMuted}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+                backgroundColor: "black",
+              }}
+              onEnded={() => setVideoEnded(true)}
+              onLoadedData={handleLoadedData}
+            />
+          </div>
 
           <div
             style={{
-              marginTop: 10,
+              marginTop: "20px",
               display: "flex",
               gap: "1rem",
+              position: "absolute",
+              bottom: "20px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 1001,
             }}
           >
             <button
               onClick={skipIntro}
+              className="buttons"
               style={{
                 padding: "0.5rem 1rem",
                 fontSize: "1rem",
@@ -93,6 +106,7 @@ const TimelineWithIntro = () => {
 
             <button
               onClick={toggleMute}
+              className="buttons"
               style={{
                 padding: "0.5rem 1rem",
                 fontSize: "1rem",

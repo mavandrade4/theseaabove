@@ -4,42 +4,40 @@ import { ScrollTrigger, Observer } from "gsap/all";
 import "../App.css";
 import { Link } from "react-router-dom";
 import LoadingScreen from './components/LoadingScreen';
+import Footer from "./components/Footer";
 
 const Project = () => {
   const sectionsRef = useRef([]);
+  const footerRef = useRef(null);
   const currentIndex = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const scrollToSection = (index) => {
-    const section = sectionsRef.current[index];
-    if (!section) return;
+    let target;
+    
+    if (index < sectionsRef.current.length) {
+      target = sectionsRef.current[index];
+    } else {
+      target = footerRef.current;
+    }
+
+    if (!target) return;
 
     gsap.to(window, {
-      scrollTo: { y: section, autoKill: false },
+      scrollTo: { y: target, autoKill: false },
       duration: 1.2,
       ease: "power3.out",
       onComplete: () => {
         currentIndex.current = index;
         setActiveIndex(index);
-
-        if (index === 0) {
-          document.body.classList.remove("show-nav");
-        } else {
-          document.body.classList.add("show-nav");
-        }
       },
     });
   };
 
   useEffect(() => {
-    const minLoadingTime = 1000; // Shorter for subsequent pages
-    const loadingStartTime = performance.now();
-
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, minLoadingTime);
-
+    const minLoadingTime = 1000;
+    const timer = setTimeout(() => setIsLoading(false), minLoadingTime);
     return () => clearTimeout(timer);
   }, []);
 
@@ -47,11 +45,20 @@ const Project = () => {
     if (!isLoading) {
       const sections = sectionsRef.current;
 
-      Observer.create({
+      const observer = Observer.create({
         target: window,
         type: "wheel,touch",
-        onDown: () => currentIndex.current < sections.length - 1 && scrollToSection(currentIndex.current + 1),
-        onUp: () => currentIndex.current > 0 && scrollToSection(currentIndex.current - 1),
+        onDown: () => {
+          const atFooter = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100;
+          if (!atFooter && currentIndex.current < sections.length) {
+            scrollToSection(currentIndex.current + 1);
+          }
+        },
+        onUp: () => {
+          if (currentIndex.current > 0) {
+            scrollToSection(currentIndex.current - 1);
+          }
+        },
         wheelSpeed: 1,
         tolerance: 15,
         preventDefault: true,
@@ -73,7 +80,24 @@ const Project = () => {
         });
       });
 
-      requestAnimationFrame(() => scrollToSection(0));
+      // Add ScrollTrigger for footer
+      ScrollTrigger.create({
+        trigger: footerRef.current,
+        start: "top bottom-=100",
+        onEnter: () => {
+          setActiveIndex(sections.length);
+          currentIndex.current = sections.length;
+        },
+        onEnterBack: () => {
+          setActiveIndex(sections.length - 1);
+          currentIndex.current = sections.length - 1;
+        },
+      });
+
+      return () => {
+        observer.kill();
+        ScrollTrigger.getAll().forEach(instance => instance.kill());
+      };
     }
   }, [isLoading]);
 
@@ -102,7 +126,7 @@ const Project = () => {
           <h1>
             THE SEA ABOVE: <br />
             The Project
-          </h1>
+          </h1> 
         </div>
       </div>
 
@@ -180,6 +204,9 @@ const Project = () => {
           </p>
           <Link className="buttons" Link to="/timeline">See Visualization</Link>
         </div>
+      </div>
+      <div ref={footerRef}>
+        <Footer />
       </div>
     </div>
   );

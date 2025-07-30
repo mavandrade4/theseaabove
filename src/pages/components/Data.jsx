@@ -76,7 +76,48 @@ const Data = () => {
       }
     });
 
-    return Array.from(unique.values());
+
+
+     const combinedData = Array.from(unique.values());
+
+    // Add debug logging for combined data
+    console.log("=== Combined Data Summary ===");
+    console.log(`Total objects: ${combinedData.length}`);
+
+    // Group by year and type
+    const yearTypeCounts = combinedData.reduce((acc, item) => {
+      const year = item.year || "unknown";
+      const type = item.type || "unknown";
+      
+      if (!acc[year]) {
+        acc[year] = { satellite: 0, debris: 0, unknown: 0 };
+      }
+      
+      if (type === "satellite") {
+        acc[year].satellite++;
+      } else if (type === "debris") {
+        acc[year].debris++;
+      } else {
+        acc[year].unknown++;
+      }
+      
+      return acc;
+    }, {});
+
+    // Log counts per year
+    console.log("Objects per year and type:");
+    Object.entries(yearTypeCounts)
+      .sort(([yearA], [yearB]) => yearA - yearB)
+      .forEach(([year, counts]) => {
+        console.log(
+          `${year}: ` +
+          `${counts.satellite} satellites, ` +
+          `${counts.debris} debris, ` +
+          `${counts.unknown} unknown`
+        );
+      });
+
+    return combinedData;
   };
 
   const getYearStartIndexes = (data) => {

@@ -11,8 +11,8 @@ import LoadingScreen from "./pages/components/LoadingScreen";
 import Root from './root';
 import App from './App';
 
-const Timeline = React.lazy(() => import('./pages/Timeline'));
-const Groups = React.lazy(() => import('./pages/Groups'));
+import Groups from './pages/components/Groups';
+import Timeline from './pages/Timeline';
 const Context = React.lazy(() => import('./pages/Context'));
 const About = React.lazy(() => import('./pages/About'));
 const Project = React.lazy(() => import('./pages/Project'));

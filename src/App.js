@@ -4,81 +4,66 @@ import { gsap } from "gsap";
 import { ScrollToPlugin, ScrollTrigger, Observer } from "gsap/all";
 import { Link } from "react-router-dom";
 import LoadingScreen from './pages/components/LoadingScreen';
+import Footer from "./pages/components/Footer";
 
 gsap.registerPlugin(ScrollToPlugin, ScrollTrigger, Observer);
 
 const App = () => {
   const sectionsRef = useRef([]);
+  const footerRef = useRef(null);
   const currentIndex = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   const scrollToSection = (index) => {
-    const section = sectionsRef.current[index];
-    if (!section) return;
+    let target;
+    
+    if (index < sectionsRef.current.length) {
+      target = sectionsRef.current[index];
+    } else {
+      target = footerRef.current;
+    }
+
+    if (!target) return;
 
     gsap.to(window, {
-      scrollTo: { y: section, autoKill: false },
+      scrollTo: { y: target, autoKill: false },
       duration: 1.2,
       ease: "power3.out",
       onComplete: () => {
         currentIndex.current = index;
         setActiveIndex(index);
-        document.body.classList.toggle("show-nav", index !== 0);
       },
     });
   };
 
   useEffect(() => {
-    const minLoadingTime = 1500;
-    const loadingStartTime = performance.now();
-
-    const loadAssets = async () => {
-      try {
-        await Promise.all([
-          new Promise((resolve) => {
-            const img = new Image();
-            img.src = process.env.PUBLIC_URL + "/anim1.gif";
-            img.onload = resolve;
-          }),
-        ]);
-      } catch (error) {
-        console.error("Error loading assets:", error);
-      } finally {
-        const remainingTime = Math.max(0, minLoadingTime - (performance.now() - loadingStartTime));
-        setTimeout(() => setIsLoading(false), remainingTime);
-      }
-    };
-
-    loadAssets();
+    const minLoadingTime = 1000;
+    const timer = setTimeout(() => setIsLoading(false), minLoadingTime);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (!isLoading) {
       const sections = sectionsRef.current;
 
-      Observer.create({
+      const observer = Observer.create({
         target: window,
         type: "wheel,touch",
-        onDown: () => currentIndex.current < sections.length - 1 && scrollToSection(currentIndex.current + 1),
-        onUp: () => currentIndex.current > 0 && scrollToSection(currentIndex.current - 1),
+        onDown: () => {
+          const atFooter = window.innerHeight + window.scrollY >= document.body.offsetHeight - 100;
+          if (!atFooter && currentIndex.current < sections.length) {
+            scrollToSection(currentIndex.current + 1);
+          }
+        },
+        onUp: () => {
+          if (currentIndex.current > 0) {
+            scrollToSection(currentIndex.current - 1);
+          }
+        },
         wheelSpeed: 1,
         tolerance: 15,
         preventDefault: true,
-      });
-
-      gsap.utils.toArray(".fade-in-text").forEach((el) => {
-        gsap.from(el, {
-          opacity: 0,
-          y: 30,
-          duration: 1,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: el,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          },
-        });
       });
 
       sections.forEach((section, i) => {
@@ -97,7 +82,24 @@ const App = () => {
         });
       });
 
-      requestAnimationFrame(() => scrollToSection(0));
+      // Add ScrollTrigger for footer
+      ScrollTrigger.create({
+        trigger: footerRef.current,
+        start: "top bottom-=100",
+        onEnter: () => {
+          setActiveIndex(sections.length);
+          currentIndex.current = sections.length;
+        },
+        onEnterBack: () => {
+          setActiveIndex(sections.length - 1);
+          currentIndex.current = sections.length - 1;
+        },
+      });
+
+      return () => {
+        observer.kill();
+        ScrollTrigger.getAll().forEach(instance => instance.kill());
+      };
     }
   }, [isLoading]);
 
@@ -105,15 +107,15 @@ const App = () => {
 
   return (
     <div className="App">
-      <div className="dot-nav">
-        {[0, 1, 2, 3].map((i) => (
+      {<div className="dot-nav">
+        {[0, 1].map((i) => (
           <div
             key={i}
             className={`dot ${activeIndex === i ? "active" : ""}`}
             onClick={() => scrollToSection(i)}
           />
         ))}
-      </div>
+      </div>}
       <div className="container">
         <div
           className="frame"
@@ -139,7 +141,7 @@ const App = () => {
               ships ever lost in history were still drifting on top of the
               water"
             </p>
-            <p>ESA Director General Jan Wörner 2019</p>
+            <p>ESA Director General Jan Wörner, 2019</p>
             <Link className="buttons" to="/timeline">
               START
             </Link>
@@ -154,7 +156,10 @@ const App = () => {
       </div>
 
       <div className="frame" ref={(el) => (sectionsRef.current[1] = el)}>
-        <h1>CONTEXT</h1>
+        <div className="title-deco-2">
+          <img src={process.env.PUBLIC_URL + "/title-2.svg"} alt="Title decoration" />
+          <h1>CONTEXT</h1>
+        </div>
         <div className="text-frame">
           <p>
             Space has become an essential part of our daily lives. From GPS and
@@ -172,8 +177,13 @@ const App = () => {
         </Link>
       </div>
 
+      {/*
+
       <div className="frame" ref={(el) => (sectionsRef.current[2] = el)}>
-        <h1>VISUALIZATION</h1>
+        <div className="title-deco-2" style={{margin:"10vh 0 0 -130px"}}>
+          <img src={process.env.PUBLIC_URL + "/title-2.svg"} alt="Title decoration" style={{height:"90%", width: "calc(100% + 100px + 10px)"}} />
+          <h1>VISUALIZATION</h1>
+        </div>
         <div className="text-frame">
           <p>
             Behind every object in orbit lies a story told through data. This
@@ -185,13 +195,21 @@ const App = () => {
             together to power the visual experience.
           </p>
         </div>
-        <Link className="buttons" to="/project">
+        <div className="buttons-container">
+        <Link className="buttons" to="/timeline">
+          SEE TIMELINE
+        </Link>
+        <Link className="buttons" to="/data">
           KNOW MORE
         </Link>
+        </div>
       </div>
 
       <div className="frame" ref={(el) => (sectionsRef.current[3] = el)}>
-        <h1>ABOUT</h1>
+        <div className="title-deco-2">
+          <img src={process.env.PUBLIC_URL + "/title-2.svg"} alt="Title decoration" />
+          <h1>ABOUT</h1>
+        </div>
         <div className="text-frame">
           <p>
             This project combines artificial intelligence, space science, and
@@ -206,6 +224,9 @@ const App = () => {
         <Link className="buttons" to="/about">
           KNOW MORE
         </Link>
+      </div> */}
+      <div ref={footerRef}>
+        <Footer />
       </div>
     </div>
   );

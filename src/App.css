@@ -1,14 +1,25 @@
+:root {
+  --bg-dark: #0a0a0a; /* Slightly warmer black */
+  --primary: #8b2e2e; /* Deeper, more elegant red */
+  --secondary: #3a3a3a; /* For accents */
+  --text: #f0f0f0;
+  --text-secondary: #b0b0b0;
+}
+
 body {
   background: #070707;
   margin: 0;
   padding: 0;
-  overflow-y: auto; 
+  overflow-y: auto;
   overflow-x: hidden;
+
+  scroll-behavior: smooth;
 }
 
 .App {
   color: #f0f0f0;
   font-family: "JetBrains Mono", monospace;
+  line-height: 1.6;
 }
 
 h1 {
@@ -19,28 +30,39 @@ h1 {
 /* BUTTONS -------------------------------------------------------- */
 
 .buttons {
-  background-color: #f0f0f0;
-  border: 3px solid #070707;
+  background-color: #070707;
+  border-top: #5f1e1e 2px solid;
+  border-right: #5f1e1e 2px solid;
   padding: 2vh 2vw;
   font-size: 16px;
   cursor: pointer;
-  color: #070707;
+  color: #f0f0f0;
   text-decoration: none;
   display: inline-block;
   font-family: inherit;
   line-height: normal;
+  padding: "0.5rem 1rem";
+  font-size: "1rem";
+  cursor: "pointer";
 }
 
 .buttons:hover {
-  background-color: #f0f0f0;
-  border: 3px solid #5f1e1e;
-  color: #5f1e1e;
+  background-color: #070707;
+  border: 2px solid #5f1e1e;
+  color: #f0f0f0;
 }
 
 .buttons.selected {
   background-color: #5f1e1e;
   border: 3px solid #f0f0f0;
   color: #f0f0f0;
+}
+
+.buttons-container {
+  display: flex;
+  flex-direction: row;
+  justify-items: left;
+  gap: 5vh;
 }
 
 /* CONTAINER -------------------------------------------------------- */
@@ -51,8 +73,12 @@ h1 {
   display: flex;
   flex-direction: row;
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   overflow: hidden;
   height: auto;
+  padding: 0 5vw;
+  box-sizing: border-box;
 }
 
 /* TITLE FRAME -------------------------------------------------------- */
@@ -106,27 +132,52 @@ h1 {
   }
 }
 
-.title-deco h1 { 
+.title-deco h1 {
   margin: 0;
-  font-size: 3rem;
+  font-size: 2rem;
   line-height: 1.2;
+}
+
+.title-deco-2 {
+  position: relative;
+  display: inline-block;
+  padding-left: 100px;
+  margin-left: -100px;
+  margin-top: 10vh;
+}
+
+.title-deco-2 img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: calc(100% + 100px + 2px);
+  z-index: -1;
+
+  object-fit: fill;
+  object-position: left center;
+}
+
+.title-deco-2 h1 {
+  font-size: 2.5rem;
+  text-align: left;
 }
 
 /* FRAMES -------------------------------------------------------- */
 
 .frame {
-  background-color: rgba(2,0,34, 0.5);
+  background-color: transparent;
   width: 100%;
-  height: auto;
+  height: 100vh;
   padding: 3vw;
   box-sizing: border-box;
   position: relative;
   margin: 3vh;
-  margin-top: 5vh;
+  margin-top: 10vh;
 }
 
 .frame2 {
-  background-color: rgba(2,0,34, 0.5);
+  background-color: rgba(2, 0, 34, 0.5);
   width: 100%;
   height: auto;
   padding: 3vw 30vh 10vh 3vw;
@@ -153,8 +204,19 @@ h1 {
   margin-left: 0;
 }
 
+/* ANIMATIONS */
+@keyframes fadeInInPlace {
+  to {
+    opacity: 1;
+  }
+}
 
-/* TEXT FADE-IN -------------------------------------------------------- */
+@keyframes fadeInSides {
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
 
 @keyframes fadeInText {
   from {
@@ -167,35 +229,34 @@ h1 {
   }
 }
 
-/* Apply animation to text elements */
-.frame h1,
-.frame h2,
-.frame p,
-.frame2 h1,
-.frame2 h2,
-.frame2 p,
-.text-frame h1,
-.text-frame p {
-  opacity: 0;
-  animation: fadeInText 1s ease-out forwards;
-  animation-delay: 0.3s;
-}
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    padding: 0;
+  }
 
-/* Optional staggered effect */
-.frame p:nth-of-type(1),
-.frame2 p:nth-of-type(1),
-.text-frame p:nth-of-type(1) {
-  animation-delay: 0.3s;
-}
-.frame p:nth-of-type(2),
-.frame2 p:nth-of-type(2),
-.text-frame p:nth-of-type(2) {
-  animation-delay: 0.6s;
-}
-.frame p:nth-of-type(3),
-.frame2 p:nth-of-type(3),
-.text-frame p:nth-of-type(3) {
-  animation-delay: 0.9s;
+  .frame,
+  .frame2 {
+    padding: 10vh 5vw;
+  }
+
+  .navbar-links {
+    flex-wrap: wrap;
+    padding: 0;
+  }
+
+  .navbar-links a {
+    padding: 1rem;
+  }
+
+  .title-deco-2 {
+    padding-left: 60px;
+  }
+
+  .title-deco-2 img {
+    width: calc(100% + 60px + 2px);
+  }
 }
 
 /* DOT NAVIGATION -------------------------------------------------------- */

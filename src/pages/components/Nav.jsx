@@ -15,9 +15,9 @@ const Nav = () => {
       <nav className={`navbar ${hovering ? 'shown' : 'hidden'}`}>
         <div className="navbar-links">
           <Link to="/" onClick={() => setHovering(false)} style={{ fontFamily: 'Unbounded' }}>The Sea Above</Link>
-          <Link to="/timeline" onClick={() => setHovering(false)}>project</Link>
-          <Link to="/data" onClick={() => setHovering(false)}>data</Link>
+          <Link to="/timeline" onClick={() => setHovering(false)}>visualization</Link>
           <Link to="/context" onClick={() => setHovering(false)}>context</Link>
+          <Link to="/data" onClick={() => setHovering(false)}>data</Link>
           <Link to="/about" onClick={() => setHovering(false)}>about</Link>
         </div>
       </nav>

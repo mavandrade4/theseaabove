@@ -7,17 +7,14 @@ import DataContextProvider from './context/dataContext';
 import AnimationContextProvider from './context/AnimationContext';
 
 export default function Root() {
-  const [hideFooter, setHideFooter] = useState(false);
-
   return (
     <div>
       <Nav />
       <DataContextProvider data={Data()}>
         <AnimationContextProvider>
-          <Outlet context={{ hideFooter, setHideFooter }} />
+          <Outlet />
         </AnimationContextProvider>
       </DataContextProvider>
-      <Footer hide={hideFooter} />
     </div>
   );
 }

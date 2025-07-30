@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import * as d3 from "d3";
 import { dataContext } from "../../context/dataContext";
-import "../Groups.css";
+import "./Groups.css";
 
 const BubbleChart = () => {
   const rawData = useContext(dataContext);
