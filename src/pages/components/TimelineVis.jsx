@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useContext, useState } from "react";
 import { dataContext } from "../../context/dataContext";
 import * as d3 from "d3";
-import "./Timeline.css";
+import "../../App.css";
 import { Link } from "react-router-dom";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -27,7 +27,6 @@ const TimelineVis = () => {
   const data = useContext(dataContext);
   const { animationDone, setAnimationDone } = useContext(AnimationContext);
 
-  // Generate all years from 1957 to 2023
   const allYears = Array.from({ length: 2023 - 1956 + 1 }, (_, i) => 1957 + i);
   allYears.push("unknown");
 
@@ -36,7 +35,7 @@ const TimelineVis = () => {
       year: "Start",
       title: "Space Objects Timeline",
       message:
-        "Each circle represents an object in Earth's orbit. Satellites appear on the left side, while space debris appears on the right. The visualization shows the accumulation of objects over time, from 1957 to present. You can also see the cumulative number of objects or color them by country of origin.",
+        "Each circle represents an object in Earth's orbit. Satellites appear on the left side, while space debris appears on the right. The visualization shows the accumulation of objects over time, from 1957 to present. The central circles show the total number of objects accumulated each year, growing in size to represent the increasing impact.",
     },
     {
       year: "1957",
@@ -61,60 +60,10 @@ const TimelineVis = () => {
       message: "The US begins systematic tracking of orbital debris.",
     },
     {
-      year: "1981",
-      title: "Start of the Space Shuttle program",
-      message: "Expected to increase launch frequency and reduce costs.",
-    },
-    {
-      year: "1983",
-      title: "Relative slowdown in satellite launches",
-      message: "Various factors led to reduced launch frequency.",
-    },
-    /*{
-      year: "1990",
-      title: "Launch of Hubble Space Telescope",
-      message: "An important satellite contributing to growing orbital assets.",
-    },
-    {
-      year: "1996",
-      title: "First collision between catalogued space objects predicted",
-      message: "Highlights growing congestion.",
-    },
-    {
-      year: "2007",
-      title: "Chinese anti-satellite missile test",
-      message: "Created over 3,000 pieces of trackable debris.",
-    },*/
-    {
-      year: "2009",
-      title: "Iridium 33 and Cosmos 2251 collision",
-      message: "First accidental collision between two intact satellites.",
-    },
-    /*{
-      year: "2010",
-      title: "Rapid growth of mega-constellations planned",
-      message: "Thousands of new satellites planned.",
-    },*/
-    {
       year: "2013",
       title: "Launch of SpaceX's Starlink program begins",
       message: "Commercial space traffic surges.",
     },
-    {
-      year: "2014",
-      title: "International guidelines for debris mitigation adopted",
-      message: "Voluntary best practices established.",
-    },
-    /*{
-      year: "2019",
-      title: "Increase in satellite launches due to mega-constellations",
-      message: "Space traffic grows exponentially.",
-    },
-    {
-      year: "2021",
-      title: "First active debris removal missions proposed",
-      message: "Addressing the growing debris problem.",
-    },*/
     {
       year: "2023",
       title: "Regulatory discussions intensify globally",
@@ -133,10 +82,9 @@ const TimelineVis = () => {
       document.body.classList.add("scroll-locked");
     } else {
       document.body.classList.remove("scroll-locked");
-      // Ensure scroll is fully released
       gsap.set(window, { scrollTo: { autoKill: false } });
-      document.documentElement.style.overflow = 'auto';
-      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = "auto";
+      document.body.style.overflow = "auto";
     }
   }, [animationDone]);
 
@@ -193,7 +141,7 @@ const TimelineVis = () => {
       .call(yAxis)
       .selectAll("text")
       .style("font-size", "12px")
-      .style("fill", "#5F1E1E")
+      .style("fill", "var(--primary)")
       .attr("class", "year-label");
 
     const countries = Array.from(
@@ -206,98 +154,74 @@ const TimelineVis = () => {
 
     const maxCount =
       d3.max(Array.from(dataByGroup.values(), (v) => v.length)) || 1;
-    const scaleWidth = d3
-      .scaleLinear()
+    const circleScale = d3
+      .scaleSqrt()
       .domain([0, filteredData.length])
-      .range([0, width / 3]);
+      .range([5, 100]);
 
-    let cumulativeSat = 0;
-    let cumulativeDebris = 0;
+    let cumulativeTotal = 0;
     const nodes = [];
+    const cumulativeRadii = {}; // Store cumulative radii for each year
+
+    // Add center line
+    svg
+      .append("line")
+      .attr("x1", width / 2)
+      .attr("y1", margin.top - 20)
+      .attr("x2", width / 2)
+      .attr("y2", height - margin.bottom + 20)
+      .attr("stroke", "var(--text-secondary)")
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "4 4");
 
     sortedGroups.forEach((group, i) => {
       const items = dataByGroup.get(group) || [];
       const y = yScale(i);
 
-      const satellites = items.filter((d) => d.type === "satellite");
-      const debris = items.filter((d) => d.type === "debris");
+      cumulativeTotal += items.length;
+      const currentRadius = circleScale(cumulativeTotal);
+      cumulativeRadii[group] = currentRadius; // Store the radius for this year
 
-      cumulativeSat += satellites.length;
-      cumulativeDebris += debris.length;
-
-      const barHeight = 5;
-      const cumulativeSatWidth = scaleWidth(cumulativeSat);
-      const cumulativeDebrisWidth = scaleWidth(cumulativeDebris);
-
+      // Create cumulative circle in the center
       svg
-        .append("rect")
-        .attr("x", width / 2 - cumulativeSatWidth)
-        .attr("y", y - barHeight / 2)
-        .attr("width", cumulativeSatWidth)
-        .attr("height", barHeight)
-        .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707")
-        .attr("opacity", 0.6)
+        .append("circle")
+        .attr("class", "cumulative-circle")
+        .attr("cx", width / 2)
+        .attr("cy", y)
+        .attr("r", currentRadius)
+        .attr("stroke", useWhiteBars ? "var(--text)" : "var(--bg-dark)")
+        .attr("stroke-width", 1)
         .on("mouseover", (event) =>
-          showTooltip(
-            `Cumulative satellites by ${group}: ${cumulativeSat}`,
-            event
-          )
+          showTooltip(`Total objects by ${group}: ${cumulativeTotal}`, event)
         )
         .on("mouseout", hideTooltip);
-
-      svg
-        .append("rect")
-        .attr("x", width / 2)
-        .attr("y", y - barHeight / 2)
-        .attr("width", cumulativeDebrisWidth)
-        .attr("height", barHeight)
-        .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707")
-        .attr("opacity", 0.6)
-        .on("mouseover", (event) =>
-          showTooltip(
-            `Cumulative debris by ${group}: ${cumulativeDebris}`,
-            event
-          )
-        )
-        .on("mouseout", hideTooltip);
-
-      if (i === 0) {
-        svg
-          .append("line")
-          .attr("x1", width / 2)
-          .attr("y1", margin.top - 20)
-          .attr("x2", width / 2)
-          .attr("y2", height - margin.bottom + 20)
-          .attr("stroke", "#999")
-          .attr("stroke-width", 2)
-          .attr("stroke-dasharray", "4 4");
-      }
-
-      const maxSpread = (width - margin.left - margin.right) / 2 - 40;
 
       const createPositions = (arr, direction = "center") => {
-        const spacing = maxSpread / maxCount;
         return arr.map((item, idx) => {
-          let offsetX = 0;
-          if (direction === "left") {
-            offsetX =
-              -1 *
-              (Math.random() * arr.length * spacing + cumulativeSatWidth + 50);
-          } else if (direction === "right") {
-            offsetX =
-              Math.random() * arr.length * spacing + cumulativeDebrisWidth + 50;
-          } else {
-            offsetX = (Math.random() - 0.5) * 300;
-          }
-
+          
+          const baseDistance = currentRadius + 5; // 5px padding from the edge
+          const angle = Math.random() * Math.PI * 2; // Random angle
+          
+          // Calculate position based on direction
+          let x, yJittered;
           const jitterY = (Math.random() - 0.5) * 30;
-          const x = width / 2 + offsetX;
-          const yJittered = y + jitterY + barHeight;
+          
+          if (direction === "left") {
+            x = width / 2 - baseDistance - (Math.random() * 90);
+            yJittered = y + jitterY;
+          } else if (direction === "right") {
+            x = width / 2 + baseDistance + (Math.random() * 90);
+            yJittered = y + jitterY;
+          } else {
+            // For center (not used in this case)
+            x = width / 2 + (Math.random() - 0.5) * 300;
+            yJittered = y + jitterY;
+          }
 
           return {
             ...item,
             year: group,
-            id: item.id || `${group}-${item.name || "unknown"}-${idx}`, // ensure unique ID
+            id: item.id || `${group}-${item.name || "unknown"}-${idx}`,
             x: Math.max(margin.left, Math.min(width - margin.right, x)),
             y: yJittered,
             r: 2,
@@ -307,8 +231,18 @@ const TimelineVis = () => {
         });
       };
 
-      nodes.push(...createPositions(satellites, "left"));
-      nodes.push(...createPositions(debris, "right"));
+      nodes.push(
+        ...createPositions(
+          items.filter((d) => d.type === "satellite"),
+          "left"
+        )
+      );
+      nodes.push(
+        ...createPositions(
+          items.filter((d) => d.type === "debris"),
+          "right"
+        )
+      );
     });
 
     const scrollTween = gsap.to(window, {
@@ -324,7 +258,7 @@ const TimelineVis = () => {
 
       svgEl
         .selectAll(".year-label")
-        .style("fill", "#333")
+        .style("fill", "var(--secondary)")
         .style("font-weight", "normal");
 
       if (skipAnimation || canceled) {
@@ -337,8 +271,8 @@ const TimelineVis = () => {
             .attr("r", d.r)
             .attr("fill", "none")
             .attr("stroke", function (d) {
-              if (!d) return "#5F1E1E";
-              return useColor ? d?.color ?? "#5F1E1E" : "#5F1E1E";
+              if (!d) return "var(--primary)";
+              return useColor ? d?.color ?? "var(--primary)" : "var(--primary)";
             })
             .attr("stroke-width", 1)
             .attr("opacity", d.opacity)
@@ -355,10 +289,9 @@ const TimelineVis = () => {
         setAnimationDone(true);
         setIsPaused(false);
         document.body.classList.remove("scroll-locked");
-        // Reset scroll behavior when skipping
         gsap.set(window, { scrollTo: { autoKill: false } });
-        document.documentElement.style.overflow = 'auto';
-        document.body.style.overflow = 'auto';
+        document.documentElement.style.overflow = "auto";
+        document.body.style.overflow = "auto";
         return;
       }
 
@@ -389,12 +322,12 @@ const TimelineVis = () => {
 
         svgEl
           .selectAll(".year-label")
-          .style("fill", "#333")
+          .style("fill", "var(--secondary)")
           .style("font-weight", "normal");
         svgEl
           .selectAll(".year-label")
           .filter((_, i) => i === yearIndex)
-          .style("fill", "#5F1E1E")
+          .style("fill", "var(--primary)")
           .style("font-weight", "bold");
 
         await new Promise((resolve) => {
@@ -417,7 +350,7 @@ const TimelineVis = () => {
             .attr("cy", height)
             .attr("r", node.r)
             .attr("fill", "none")
-            .attr("stroke", "#5F1E1E")
+            .attr("stroke", "var(--primary)")
             .attr("stroke-width", 1.5)
             .attr("opacity", 0)
             .on("mouseover", (event) =>
@@ -443,10 +376,9 @@ const TimelineVis = () => {
 
       setAnimationDone(true);
       document.body.classList.remove("scroll-locked");
-      // Reset scroll behavior when animation completes
       gsap.set(window, { scrollTo: { autoKill: false } });
-      document.documentElement.style.overflow = 'auto';
-      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = "auto";
+      document.body.style.overflow = "auto";
     };
 
     animateNodes();
@@ -458,8 +390,8 @@ const TimelineVis = () => {
         scrollTweenRef.current.kill();
       }
       gsap.set(window, { scrollTo: { autoKill: false } });
-      document.documentElement.style.overflow = 'auto';
-      document.body.style.overflow = 'auto';
+      document.documentElement.style.overflow = "auto";
+      document.body.style.overflow = "auto";
     };
   }, [data, skipAnimation]);
 
@@ -470,18 +402,19 @@ const TimelineVis = () => {
       .transition()
       .duration(100)
       .attr("stroke", function (d) {
-              if (!d) return "#5F1E1E";
-              return useColor ? d?.color ?? "#5F1E1E" : "#5F1E1E";
-            });
+        if (!d) return "var(--primary)";
+        return useColor ? d?.color ?? "var(--primary)" : "var(--primary)";
+      });
   }, [useColor, animationDone]);
 
   useEffect(() => {
     if (!animationDone) return;
     d3.select(svgRef.current)
-      .selectAll("rect")
+      .selectAll(".cumulative-circle")
       .transition()
       .duration(10)
-      .attr("fill", useWhiteBars ? "#FFFFFF" : "#070707");
+      .attr("fill", useWhiteBars ? "transparent" : "transparent")
+      .attr("stroke", useWhiteBars ? "var(--primary)" : "var(--bg-dark)");
   }, [useWhiteBars, animationDone]);
 
   return (
@@ -514,7 +447,7 @@ const TimelineVis = () => {
           className="control-button"
           onClick={() => setUseWhiteBars(!useWhiteBars)}
         >
-          Show Cumulative Values
+          {useWhiteBars ? "Hide cumulative values" : "Show cumulative values"}
         </button>
         <Link to="/groups" className="control-button">
           Explore
@@ -541,4 +474,4 @@ const TimelineVis = () => {
   );
 };
 
-export default TimelineVis;
+export default TimelineVis; 

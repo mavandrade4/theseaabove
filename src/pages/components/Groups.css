@@ -1,3 +1,13 @@
+:root {
+  --bg-dark: #070707;
+  --primary: #BF574F;
+  --secondary: #3a3a3a;
+  --text: #f0f0f0;
+  --text-secondary: #b0b0b0;
+  --section-bg: linear-gradient(135deg, #0a0a0a 0%, #141414 100%);
+  --section-bg-alt: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+}
+
 .groups-container {
   position: relative;
   top: 0;
@@ -44,7 +54,7 @@
 }
 
 .filter-toggle-btn {
-  background-color: #f0f0f0;
+  background-color: var(--text);
   padding: 0.6rem 1rem;
   font-size: 16px;
   cursor: pointer;
@@ -57,9 +67,9 @@
 }
 
 .filter-toggle-btn:hover {
-  background-color: #f0f0f0;
-  border: 1px solid #5f1e1e;
-  color: #070707;
+  background-color: var(--text);
+  border: 1px solid var(--primary);
+  color: var(--bg-dark);
   border-radius: 0px;
 }
 
@@ -76,14 +86,14 @@
   position: absolute;
   right: 1rem;
   top: 1rem;
-  background-color: #f0f0f0;
-  border: 3px solid #070707;
-  color: #070707;
+  background-color: var(--text);
+  border: 3px solid var(--bg-dark);
+  color: var(--bg-dark);
   padding: 1rem;
   width: 250px;
   z-index: 20;
   font-family: inherit;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 10px var(--secondary);
   pointer-events: none;
   line-height: 1.4;
 
@@ -95,9 +105,9 @@
 .satellite-details h3 {
   margin-top: 0;
   margin-bottom: 0.5rem;
-  color: #5f1e1e;
+  color: var(--primary);
   font-size: 1.1rem;
-  border-bottom: 2px solid #5f1e1e;
+  border-bottom: 2px solid var(--primary);
   padding-bottom: 0.25rem;
 }
 
@@ -112,7 +122,7 @@
 }
 
 .satellite-details strong {
-  color: #5f1e1e;
+  color: var(--primary);
 }
 
 .groups-container:hover .satellite-details {

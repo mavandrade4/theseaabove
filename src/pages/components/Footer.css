@@ -1,6 +1,16 @@
+:root {
+  --bg-dark: #070707;
+  --primary: #BF574F;
+  --secondary: #3a3a3a;
+  --text: #f0f0f0;
+  --text-secondary: #b0b0b0;
+  --section-bg: linear-gradient(135deg, #0a0a0a 0%, #141414 100%);
+  --section-bg-alt: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+}
+
 /* FOOTER */
 .footer {
-  background: rgba(2, 0, 34, 0.7);
+  background: var(--bg-dark);
   border-top: 1px solid rgba(95, 30, 30, 0.2);
   width: 100%;
   min-height: 30vh;
@@ -14,7 +24,7 @@
 }
 
 .footer-text {
-  color: #f0f0f0;
+  color: var(--text);
   font-family: "Unbounded", monospace;
   font-size: 1.25rem;
   font-weight: 300;
@@ -31,7 +41,7 @@
 }
 
 .footer-title a {
-  color: #f0f0f0;
+  color: var(--text);
   text-transform: uppercase;
   font-weight: 700;
   padding: 0.5rem 1rem;
@@ -53,7 +63,7 @@
 }
 
 .footer-links a {
-  color: #f0f0f0;
+  color: var(--text);
   text-transform: uppercase;
   font-weight: 400;
   padding: 0.5rem 1rem;
@@ -67,5 +77,5 @@
 }
 
 .footer-links a:hover {
-  color: #5f1e1e;
+  color: var(--primary);
 }

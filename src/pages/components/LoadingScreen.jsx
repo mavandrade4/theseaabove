@@ -7,6 +7,7 @@ const LoadingScreen = () => {
       <img 
         src={process.env.PUBLIC_URL + "/anim8-fade.gif"} 
         alt="Loading..." 
+        className="loading-image"
       />
     </div>
   );

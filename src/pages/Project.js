@@ -4,7 +4,7 @@ import { ScrollTrigger, Observer } from "gsap/all";
 import "../App.css";
 import { Link } from "react-router-dom";
 import LoadingScreen from './components/LoadingScreen';
-import Footer from "./components/Footer";
+import Footer from './components/Footer';
 
 const Project = () => {
   const sectionsRef = useRef([]);
@@ -43,6 +43,19 @@ const Project = () => {
 
   useEffect(() => {
     if (!isLoading) {
+      gsap.set(sectionsRef.current, { opacity: 0, y: 50 });
+      gsap.set('.dot-nav', { opacity: 0 });
+      
+      gsap.to('.dot-nav', { opacity: 1, duration: 1, delay: 0.5 });
+      gsap.to(sectionsRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        stagger: 0.2,
+        delay: 0.3,
+        ease: "power2.out"
+      });
+
       const sections = sectionsRef.current;
 
       const observer = Observer.create({
@@ -80,7 +93,6 @@ const Project = () => {
         });
       });
 
-      // Add ScrollTrigger for footer
       ScrollTrigger.create({
         trigger: footerRef.current,
         start: "top bottom-=100",
@@ -103,108 +115,170 @@ const Project = () => {
 
   if (isLoading) return <LoadingScreen />;
 
-
   return (
     <div className="App">
       <div className="dot-nav">
         {[0, 1, 2, 3, 4, 5].map((i) => (
-          <div
+          <button
             key={i}
             className={`dot ${activeIndex === i ? "active" : ""}`}
             onClick={() => scrollToSection(i)}
-          />
+            aria-label={`Go to section ${i + 1}`}
+          >
+            <span className="dot-label">{i + 1}</span>
+          </button>
         ))}
       </div>
 
-      <div className="title-frame" ref={(el) => (sectionsRef.current[0] = el)}>
-        <div className="title-deco">
-          <img 
-          src={process.env.PUBLIC_URL + "/title.svg"} 
-          className="title-img"
-          alt="Title Decoration"
-          ></img>
-          <h1>
-            THE SEA ABOVE: <br />
-            The Project
-          </h1> 
+      <section 
+        className="hero-section" 
+        ref={(el) => (sectionsRef.current[0] = el)}
+      >
+        <div className="hero-content">
+          <div className="title-deco">
+            <img 
+              src={process.env.PUBLIC_URL + "/title.svg"} 
+              className="title-img"
+              alt="The Sea Above Project"
+            />
+            <h1 className="hero-title">
+              <span className="title-accent">THE SEA ABOVE:</span> <br />
+              The Project
+            </h1>
+          </div>
+          <p className="hero-subtitle">
+            Exploring the data behind space debris and satellite tracking
+          </p>
         </div>
-      </div>
+          <div className="scroll-prompt" onClick={() => scrollToSection(1)}>
+            <p>Scroll to explore</p>
+            <div className="scroll-arrow"></div>
+          </div>
+      </section>
 
-      <div className="frame" ref={(el) => (sectionsRef.current[1] = el)}>
-        <h1>Where Our Information Comes From</h1>
-        <div className="text-frame">
-          <p>
-            To create the visualizations on this page, we brought together and
-            cleaned up data from two main sources. These datasets provide
-            information about satellites and space debris currently orbiting
-            Earth.
-          </p>
+      <section 
+        className="content-section" 
+        ref={(el) => (sectionsRef.current[1] = el)}
+      >
+        <div className="section-container">
+          <div className="section-header">
+            <div className="section-number">01</div>
+            <h1>Where Our Information Comes From</h1>
+          </div>
+          <div className="text-frame">
+            <p>
+              To create the visualizations on this page, we brought together and
+              cleaned up data from two main sources. These datasets provide
+              information about satellites and space debris currently orbiting
+              Earth.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="frame2" ref={(el) => (sectionsRef.current[2] = el)}>
-        <h1>Space Decay Dataset</h1>
-        <div className="text-frame">
-          <p>
-            This dataset comes from space-track.org, a trusted source for
-            tracking objects in space. It includes data on active satellites,
-            inactive ones, and space debris. The Space Decay dataset was
-            collected by KANDHAL KHANDEKA using the public API provided by
-            space-track.org. It contains a broad range of information about
-            objects currently in orbit, including their names, types, and launch
-            years. Originally, the dataset was designed for exploratory data
-            analysis (EDA), making it well-suited for identifying patterns and
-            trends in orbital activity.
-          </p>
+      <section 
+        className="content-section" 
+        ref={(el) => (sectionsRef.current[2] = el)}
+      >
+        <div className="section-container">
+          <div className="section-header">
+            <div className="section-number">02</div>
+            <h1>Space Decay Dataset</h1>
+          </div>
+          <div className="text-frame">
+            <p>
+              This dataset comes from space-track.org, a trusted source for
+              tracking objects in space. It includes data on active satellites,
+              inactive ones, and space debris. The Space Decay dataset was
+              collected by KANDHAL KHANDEKA using the public API provided by
+              space-track.org.
+            </p>
+            <p>
+              It contains a broad range of information about objects currently in orbit, 
+              including their names, types, and launch years. Originally, the dataset 
+              was designed for exploratory data analysis (EDA), making it well-suited 
+              for identifying patterns and trends in orbital activity.
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="frame" ref={(el) => (sectionsRef.current[3] = el)}>
-        <h1>Neuraspace's Space Objects</h1>
-        <div className="text-frame">
-          <p>
-            This is an internal dataset from Neuraspace, a company focused on
-            satellite collision prevention. It provides detailed, structured
-            information about space objects, including their purpose,
-            operational status, and technical specs. The dataset from Neuraspace
-            offers detailed and structured information about each space object.
-            It includes official names and unique identifiers, along with
-            classifications by type and subtype. Additionally, it records the
-            country of origin and indicates whether each object is still active.
-            This data is designed for long-term use in space traffic management,
-            helping to monitor and coordinate objects in orbit more effectively.
-          </p>
-        </div>
-      </div>
+      </section>
 
-      <div className="frame2" ref={(el) => (sectionsRef.current[4] = el)}>
-        <h1>How We Processed the Data</h1>
-        <div className="text-frame">
-          <p>
-            To make the information easier to work with and visualize, both
-            datasets were carefully merged into a single, unified structure.
-            During this process, duplicate entries were identified and removed
-            by cross-referencing the two sources. The data was then cleaned and
-            standardized by organizing it into seven core categories: name,
-            launch year, type (such as satellite or debris), subtype (like
-            payload or rocket body), country of origin, an identifier (using the
-            COSPAR ID), and finally, the source of the data — whether it came
-            from Space Decay or Neuraspace.
-          </p>
+      <section 
+        className="content-section" 
+        ref={(el) => (sectionsRef.current[3] = el)}
+      >
+        <div className="section-container">
+          <div className="section-header">
+            <div className="section-number">03</div>
+            <h1>Neuraspace's Space Objects</h1>
+          </div>
+          <div className="text-frame">
+            <p>
+              This is an internal dataset from Neuraspace, a company focused on
+              satellite collision prevention. It provides detailed, structured
+              information about space objects, including their purpose,
+              operational status, and technical specs.
+            </p>
+            <p>
+              The dataset from Neuraspace offers detailed and structured information 
+              about each space object. It includes official names and unique identifiers, 
+              along with classifications by type and subtype. Additionally, it records 
+              the country of origin and indicates whether each object is still active.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="frame" ref={(el) => (sectionsRef.current[5] = el)}>
-        <h1>Why It Matters</h1>
-        <div className="text-frame">
-          <p>
-            Combining and cleaning these datasets helps paint a more complete
-            and accurate picture of what's happening in Earth's orbit. The
-            better we understand what's up there, the better we can protect
-            satellites, avoid collisions, and keep space safe.
-          </p>
-          <Link className="buttons" Link to="/timeline">See Visualization</Link>
+      <section 
+        className="content-section" 
+        ref={(el) => (sectionsRef.current[4] = el)}
+      >
+        <div className="section-container">
+          <div className="section-header">
+            <div className="section-number">04</div>
+            <h1>How We Processed the Data</h1>
+          </div>
+          <div className="text-frame">
+            <p>
+              To make the information easier to work with and visualize, both
+              datasets were carefully merged into a single, unified structure.
+              During this process, duplicate entries were identified and removed
+              by cross-referencing the two sources.
+            </p>
+            <p>
+              The data was then cleaned and standardized by organizing it into seven 
+              core categories: name, launch year, type (such as satellite or debris), 
+              subtype (like payload or rocket body), country of origin, an identifier 
+              (using the COSPAR ID), and finally, the source of the data — whether it 
+              came from Space Decay or Neuraspace.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section 
+        className="content-section" 
+        ref={(el) => (sectionsRef.current[5] = el)}
+      >
+        <div className="section-container">
+          <div className="section-header">
+            <div className="section-number">05</div>
+            <h1>Why It Matters</h1>
+          </div>
+          <div className="text-frame">
+            <p>
+              Combining and cleaning these datasets helps paint a more complete
+              and accurate picture of what's happening in Earth's orbit. The
+              better we understand what's up there, the better we can protect
+              satellites, avoid collisions, and keep space safe.
+            </p>
+            <Link className="buttons" to="/timeline">
+              See Visualization
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <div ref={footerRef}>
         <Footer />
       </div>

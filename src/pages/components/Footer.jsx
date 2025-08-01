@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "./Footer.css";
+import "../../App.css";
 
 const Footer = ({ hide }) => {
   if (hide) return null;
