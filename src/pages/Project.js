@@ -13,6 +13,7 @@ const Project = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  
   const scrollToSection = (index) => {
     let target;
     
@@ -25,7 +26,7 @@ const Project = () => {
     if (!target) return;
 
     gsap.to(window, {
-      scrollTo: { y: target, autoKill: false },
+      scrollTo: { y: target, autoKill: false , offsetY: 0 },
       duration: 1.2,
       ease: "power3.out",
       onComplete: () => {
@@ -43,19 +44,6 @@ const Project = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      gsap.set(sectionsRef.current, { opacity: 0, y: 50 });
-      gsap.set('.dot-nav', { opacity: 0 });
-      
-      gsap.to('.dot-nav', { opacity: 1, duration: 1, delay: 0.5 });
-      gsap.to(sectionsRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 1,
-        stagger: 0.2,
-        delay: 0.3,
-        ease: "power2.out"
-      });
-
       const sections = sectionsRef.current;
 
       const observer = Observer.create({
@@ -93,6 +81,7 @@ const Project = () => {
         });
       });
 
+      // Add ScrollTrigger for footer
       ScrollTrigger.create({
         trigger: footerRef.current,
         start: "top bottom-=100",
@@ -125,7 +114,7 @@ const Project = () => {
             onClick={() => scrollToSection(i)}
             aria-label={`Go to section ${i + 1}`}
           >
-            <span className="dot-label">{i + 1}</span>
+            <span className="dot-label"></span>
           </button>
         ))}
       </div>
@@ -162,9 +151,10 @@ const Project = () => {
       >
         <div className="section-container">
           <div className="section-header">
-            <div className="section-number">01</div>
             <h1>Where Our Information Comes From</h1>
+            <div className="section-number">01</div>
           </div>
+          <div className="text-container">
           <div className="text-frame">
             <p>
               To create the visualizations on this page, we brought together and
@@ -172,6 +162,7 @@ const Project = () => {
               information about satellites and space debris currently orbiting
               Earth.
             </p>
+          </div>
           </div>
         </div>
       </section>
@@ -182,9 +173,11 @@ const Project = () => {
       >
         <div className="section-container">
           <div className="section-header">
-            <div className="section-number">02</div>
             <h1>Space Decay Dataset</h1>
+            <div className="section-number">02</div>
           </div>
+          <div className="text-container">
+
           <div className="text-frame">
             <p>
               This dataset comes from space-track.org, a trusted source for
@@ -200,6 +193,8 @@ const Project = () => {
               for identifying patterns and trends in orbital activity.
             </p>
           </div>
+
+          </div>
         </div>
       </section>
 
@@ -209,9 +204,10 @@ const Project = () => {
       >
         <div className="section-container">
           <div className="section-header">
-            <div className="section-number">03</div>
             <h1>Neuraspace's Space Objects</h1>
+            <div className="section-number">03</div>
           </div>
+          <div className="text-container">
           <div className="text-frame">
             <p>
               This is an internal dataset from Neuraspace, a company focused on
@@ -226,6 +222,8 @@ const Project = () => {
               the country of origin and indicates whether each object is still active.
             </p>
           </div>
+          </div>
+
         </div>
       </section>
 
@@ -235,9 +233,10 @@ const Project = () => {
       >
         <div className="section-container">
           <div className="section-header">
-            <div className="section-number">04</div>
             <h1>How We Processed the Data</h1>
+            <div className="section-number">04</div>
           </div>
+          <div className="text-container">
           <div className="text-frame">
             <p>
               To make the information easier to work with and visualize, both
@@ -253,6 +252,7 @@ const Project = () => {
               came from Space Decay or Neuraspace.
             </p>
           </div>
+          </div>
         </div>
       </section>
 
@@ -262,9 +262,10 @@ const Project = () => {
       >
         <div className="section-container">
           <div className="section-header">
-            <div className="section-number">05</div>
             <h1>Why It Matters</h1>
+            <div className="section-number">05</div>
           </div>
+          <div className="text-container">
           <div className="text-frame">
             <p>
               Combining and cleaning these datasets helps paint a more complete
@@ -275,6 +276,7 @@ const Project = () => {
             <Link className="buttons" to="/timeline">
               See Visualization
             </Link>
+          </div>
           </div>
         </div>
       </section>

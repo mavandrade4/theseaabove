@@ -32,7 +32,7 @@ const TimelineWithIntro = () => {
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "black",
+            backgroundColor: "--var(--bg-dark)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -45,7 +45,7 @@ const TimelineWithIntro = () => {
           {isLoading && (
             <div
               style={{
-                color: "white",
+                color: "--var(--text-light)",
                 marginBottom: 10,
                 fontSize: "1.2rem",
                 fontWeight: "bold",
@@ -73,7 +73,7 @@ const TimelineWithIntro = () => {
                 maxWidth: "100%",
                 maxHeight: "100%",
                 objectFit: "contain",
-                backgroundColor: "black",
+                backgroundColor: "--var(--bg-dark)",
               }}
               onEnded={() => setVideoEnded(true)}
               onLoadedData={handleLoadedData}

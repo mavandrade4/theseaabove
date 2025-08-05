@@ -1,11 +1,12 @@
 :root {
   --bg-dark: #070707;
-  --primary: #BF574F;
+  --primary: #bf574f;
   --secondary: #3a3a3a;
   --text: #f0f0f0;
   --text-secondary: #b0b0b0;
   --section-bg: linear-gradient(135deg, #0a0a0a 0%, #141414 100%);
   --section-bg-alt: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  --vh: 1vh;
 }
 
 /* Base Styles */
@@ -15,7 +16,7 @@
 
 html {
   font-size: 16px;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 body {
@@ -23,6 +24,8 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  overflow-y: auto;
+  height: 100%;
   font-family: "JetBrains Mono", monospace;
   color: var(--text);
   line-height: 1.6;
@@ -33,9 +36,12 @@ body {
 .App {
   position: relative;
   min-height: 100vh;
+  overflow: hidden;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: "Unbounded", sans-serif;
   margin: 0 0 1.5rem;
 }
@@ -72,6 +78,8 @@ a:hover {
 /*HOME---------------------------------*/
 /* Quote Section */
 .quote-section {
+  width: 100%;
+  
   height: 100vh;
   display: flex;
   align-items: center;
@@ -83,25 +91,20 @@ a:hover {
 
 .quote-background {
   position: absolute;
-  right: 0;
   top: 0;
-  height: 100vh;
-  width: 50%;
+  left: 0;
+  width: 100%;       
+  height: 100%;      
+  background-color: var(--bg-dark);
+  z-index: -1;       
   overflow: hidden;
-  z-index: 1;
 }
 
-.quote-background img {
+.quote-background video {
   width: 100%;
-  height: 100vh;
+  height: 100%;
   object-fit: cover;
   opacity: 0.7;
-  cursor: pointer;
-  transition: opacity 0.3s ease;
-}
-
-.quote-background img:hover {
-  opacity: 0.9;
 }
 
 .quote-container {
@@ -118,13 +121,11 @@ a:hover {
 
 .quote-content {
   flex: 1;
-  max-width: 600px;
-  padding: 2rem;
+  padding-right: 1rem;
   backdrop-filter: blur(5px);
-  text-align: center;
+  text-align: left;
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
 }
 
 .quote-text {
@@ -133,15 +134,6 @@ a:hover {
   margin-bottom: 1.5rem;
   font-style: italic;
   color: var(--text);
-  position: relative;
-}
-
-.quote-text::before,
-.quote-text::after {
-  content: '"';
-  color: var(--primary);
-  font-size: 3rem;
-  line-height: 0;
   position: relative;
 }
 
@@ -158,11 +150,12 @@ a:hover {
 .quote-author {
   font-size: 1.2rem;
   color: var(--text-secondary);
-  text-align: right;
+  text-align: left;
   margin-top: 2rem;
 }
 
-.quote-text, .quote-author {
+.quote-text,
+.quote-author {
   min-height: 1em;
 }
 
@@ -178,8 +171,13 @@ a:hover {
 }
 
 @keyframes flow-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 /* Scroll Prompt */
@@ -213,7 +211,11 @@ a:hover {
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: rotate(-45deg) translateY(0);
   }
   40% {
@@ -248,15 +250,17 @@ a:hover {
   min-width: 300px;
   max-width: 400px;
   background: rgba(10, 10, 10, 0.7);
-  border-radius: 12px;
   padding: 2rem;
-  border: 1px solid rgba(255,255,255,0.1);
+  border-top: 1px solid var(--primary);
+  border-right: 1px solid var(--primary);
+  border-bottom: 1px solid var(--secondary);
+  border-left: 1px solid var(--text);
   transition: all 0.3s ease;
 }
 
 .card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   border-color: var(--primary);
 }
 
@@ -322,7 +326,7 @@ a:hover {
   font-size: 4rem;
   line-height: 1.1;
   margin-bottom: 1.5rem;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .hero-subtitle {
@@ -367,22 +371,23 @@ a:hover {
 .content-section {
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items:flex-start;
   justify-content: center;
   padding: 10vh 5vw;
   background: var(--section-bg);
 }
 
 .section-container {
-  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
+  align-items: left;
 }
 
 .section-header {
   display: flex;
-  align-items: center;
-  margin-bottom: 3rem;
+  align-items: left;
+  margin: 1.5rem 0 0.7rem 0;
+  gap: 1.5rem;
 }
 
 .section-number {
@@ -393,12 +398,19 @@ a:hover {
   opacity: 0.7;
 }
 
+.text-container{
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+}
+
 .text-frame {
-  width: 100%;
+  width: 40%;
+  padding-right: 1.5rem;
   max-width: 800px;
 }
 
-.highlight{
+.highlight {
   color: var(--primary);
 }
 
@@ -412,14 +424,16 @@ a:hover {
   flex-direction: column;
   gap: 15px;
   z-index: 1000;
+  width: 24px;
+  align-items: center;
 }
 
 .dot {
-  width: 40px;
-  height: 40px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background-color: transparent;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 2px solid var(--primary);
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -432,10 +446,12 @@ a:hover {
 }
 
 .dot:hover {
-  border-color: rgba(255,255,255,0.5);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .dot.active {
+  width: 20px;
+  height: 20px;
   background-color: var(--primary);
   border-color: var(--primary);
 }
@@ -459,13 +475,13 @@ a:hover {
   border-bottom: 1px solid var(--secondary);
   border-left: 1px solid var(--text);
   color: var(--text);
-  padding: 12px 24px;
-  font-size: 1rem;
+  padding: 8px 16px;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.3s ease;
   display: inline-block;
   margin-top: 1rem;
-  text-transform: uppercase;
+  text-transform: capitalize;
   letter-spacing: 1px;
 }
 
@@ -482,8 +498,12 @@ a:hover {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInUp {
@@ -566,7 +586,6 @@ a:hover {
   max-width: 500px;
   background-color: var(--bg-dark);
   border: 1px solid var(--primary);
-  border-radius: 8px;
   padding: 20px;
   z-index: 1000;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
@@ -584,7 +603,7 @@ a:hover {
 
 .annotation-header {
   margin-bottom: 15px;
-  border-bottom: 1px solid rgba(95, 30, 30, 0.5);
+  border-bottom: 1px solid --var(--primary);
   padding-bottom: 10px;
 }
 
@@ -633,7 +652,6 @@ a:hover {
   background: rgba(15, 15, 15, 0.95);
   padding: 12px 16px;
   border: 1px solid var(--primary);
-  border-radius: 4px;
   font-size: 14px;
   color: var(--text);
   box-shadow: 0 4px 20px var(--bg-dark);
@@ -698,7 +716,7 @@ body.scroll-locked {
 
 .navbar-links a:first-child {
   font-family: "Unbounded";
-  padding-right: 2rem;
+  padding-left: 0;
 }
 
 .navbar-links a:hover {
@@ -706,7 +724,7 @@ body.scroll-locked {
 }
 
 .navbar-links a::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 50%;
@@ -839,8 +857,18 @@ body.menu-open {
   overflow: hidden;
   height: 100%;
 }
+/* NAVBAR */
+/* Navbar Container */
+.nav-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10000;
+  transition: all 0.3s ease;
+}
 
-/* FOOTER */
+/* Footer */
 .footer {
   background: var(--bg-dark);
   border-top: 1px solid rgba(95, 30, 30, 0.2);
@@ -886,19 +914,17 @@ body.menu-open {
 }
 
 .footer-links {
+  justify-content:  center;
   display: flex;
-  padding: 1rem;
-  font-size: large;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .footer-links a {
   color: var(--text);
   text-transform: uppercase;
   font-weight: 400;
-  padding: 0.5rem 1rem;
+  padding: 1.5rem 1.5rem;
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
@@ -906,10 +932,28 @@ body.menu-open {
   font-family: "JetBrains Mono";
   text-decoration: none;
   display: inline-block;
+  letter-spacing: 0.5px;
+  position: relative;
 }
 
 .footer-links a:hover {
   color: var(--primary);
+}
+
+.footer-links a::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.footer-links a:hover::after {
+  width: calc(100% - 3rem);
 }
 
 /* VISUALIZATION */
@@ -1063,18 +1107,18 @@ body.menu-open {
   .quote-background {
     width: 60%;
   }
-  
+
   .quote-content {
     max-width: 500px;
   }
-  
+
   .quote-text {
     font-size: 1.8rem;
   }
 
   .section-header {
     flex-direction: column;
-    align-items: center;
+    align-items: left;
   }
 
   .section-number {
@@ -1091,11 +1135,11 @@ body.menu-open {
   h1 {
     font-size: 2.5rem;
   }
-  
+
   h2 {
     font-size: 2rem;
   }
-  
+
   h3 {
     font-size: 1.5rem;
   }
@@ -1107,26 +1151,26 @@ body.menu-open {
     min-height: 100vh;
     padding: 2rem 0;
   }
-  
+
   .quote-background {
     position: relative;
     width: 100%;
     height: 40vh;
   }
-  
+
   .quote-container {
     flex-direction: column;
     padding: 1rem;
   }
-  
+
   .quote-text {
     font-size: 1.5rem;
   }
-  
+
   .quote-author {
     font-size: 1rem;
   }
-  
+
   .scroll-prompt {
     position: relative;
     bottom: auto;
@@ -1138,17 +1182,18 @@ body.menu-open {
   .navbar-links {
     flex-direction: column;
     padding: 1rem 0;
+    align-content: center;
   }
-  
+
   .navbar-links a {
     padding: 0.75rem 1rem;
     text-align: center;
   }
-  
+
   .navbar-links a::after {
     display: none;
   }
-  
+
   /* Dot navigation */
   .dot-nav {
     flex-direction: row;
@@ -1157,12 +1202,12 @@ body.menu-open {
     right: 50%;
     transform: translateX(50%);
   }
-  
+
   .dot {
     width: 30px;
     height: 30px;
   }
-  
+
   .dot-label {
     display: none;
   }
@@ -1171,23 +1216,23 @@ body.menu-open {
   .cards-section {
     padding: 5vh 5vw;
   }
-  
+
   .cards-container {
     flex-direction: column;
     gap: 1.5rem;
   }
-  
+
   .card {
     min-width: auto;
     width: 100%;
     padding: 1.5rem;
   }
-  
+
   .card-buttons {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .buttons {
     width: 100%;
     text-align: center;
@@ -1197,15 +1242,25 @@ body.menu-open {
   .info-section {
     padding: 5vh 5vw;
   }
-  
+
   .section-header {
-    margin-bottom: 1.5rem;
+    margin: 1rem 0 0.7rem 0;
+    align-items: left;
   }
-  
+
   .buttons-container {
     flex-direction: column;
     gap: 0.5rem;
   }
+
+.quote-section,
+.cards-section,
+.info-section {
+  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100); /* Add this for mobile */
+  overflow: hidden;
+}
+
 
   /* Timeline */
   .timeline-controls {
@@ -1214,34 +1269,34 @@ body.menu-open {
     flex-direction: column;
     gap: 5px;
   }
-  
+
   .control-button {
     padding: 6px 12px;
     font-size: 0.9rem;
   }
-  
+
   .satellite-label,
   .debris-label {
     font-size: 1rem;
   }
-  
+
   .satellite-label {
     left: 20%;
   }
-  
+
   .debris-label {
     left: 80%;
   }
-  
+
   .annotation-box {
     width: 90%;
     padding: 15px;
   }
-  
+
   .annotation-title {
     font-size: 1.2rem;
   }
-  
+
   .annotation-message {
     font-size: 0.9rem;
   }
@@ -1250,7 +1305,7 @@ body.menu-open {
   .hero-title {
     font-size: 2.5rem;
   }
-  
+
   .hero-subtitle {
     font-size: 1.2rem;
   }
@@ -1264,11 +1319,11 @@ body.menu-open {
   h1 {
     font-size: 2rem;
   }
-  
+
   h2 {
     font-size: 1.8rem;
   }
-  
+
   p {
     font-size: 1rem;
   }
@@ -1276,7 +1331,7 @@ body.menu-open {
   .quote-text {
     font-size: 1.3rem;
   }
-  
+
   .quote-author {
     font-size: 0.9rem;
   }
@@ -1292,7 +1347,7 @@ body.menu-open {
   .hero-title {
     font-size: 2rem;
   }
-  
+
   .hero-subtitle {
     font-size: 1rem;
   }
@@ -1305,7 +1360,9 @@ body.menu-open {
 
 /* Touch device specific adjustments */
 @media (hover: none) {
-  .buttons, .control-button, .nav-button {
+  .buttons,
+  .control-button,
+  .nav-button {
     min-height: 44px; /* Minimum touch target size */
     min-width: 44px;
   }

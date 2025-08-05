@@ -144,13 +144,24 @@ const TimelineVis = () => {
       .style("fill", "var(--primary)")
       .attr("class", "year-label");
 
+    // Custom color palette matching your theme
+    const countryColors = {
+      "United States": "#4e79a7",
+      "Russia": "#e15759",
+      "China": "#76b7b2",
+      "Japan": "#59a14f",
+      "France": "#edc948",
+      "India": "#b07aa1",
+      "United Kingdom": "#ff9da7",
+      "Germany": "#9c755f",
+      "Canada": "#bab0ac",
+      "unknown": "#8c8c8c"
+    };
+
     const countries = Array.from(
       new Set(filteredData.map((d) => d.country || "unknown"))
     );
-    const colorScale = d3
-      .scaleOrdinal()
-      .domain(countries)
-      .range(d3.schemeCategory10);
+    const colorScale = (country) => countryColors[country] || countryColors["unknown"];
 
     const maxCount =
       d3.max(Array.from(dataByGroup.values(), (v) => v.length)) || 1;
@@ -161,7 +172,7 @@ const TimelineVis = () => {
 
     let cumulativeTotal = 0;
     const nodes = [];
-    const cumulativeRadii = {}; // Store cumulative radii for each year
+    const cumulativeRadii = {};
 
     // Add center line
     svg
@@ -180,7 +191,7 @@ const TimelineVis = () => {
 
       cumulativeTotal += items.length;
       const currentRadius = circleScale(cumulativeTotal);
-      cumulativeRadii[group] = currentRadius; // Store the radius for this year
+      cumulativeRadii[group] = currentRadius;
 
       // Create cumulative circle in the center
       svg
@@ -189,6 +200,7 @@ const TimelineVis = () => {
         .attr("cx", width / 2)
         .attr("cy", y)
         .attr("r", currentRadius)
+        .attr("fill", "transparent")
         .attr("stroke", useWhiteBars ? "var(--text)" : "var(--bg-dark)")
         .attr("stroke-width", 1)
         .on("mouseover", (event) =>
@@ -198,11 +210,9 @@ const TimelineVis = () => {
 
       const createPositions = (arr, direction = "center") => {
         return arr.map((item, idx) => {
+          const baseDistance = currentRadius + 5;
+          const angle = Math.random() * Math.PI * 2;
           
-          const baseDistance = currentRadius + 5; // 5px padding from the edge
-          const angle = Math.random() * Math.PI * 2; // Random angle
-          
-          // Calculate position based on direction
           let x, yJittered;
           const jitterY = (Math.random() - 0.5) * 30;
           
@@ -213,7 +223,6 @@ const TimelineVis = () => {
             x = width / 2 + baseDistance + (Math.random() * 90);
             yJittered = y + jitterY;
           } else {
-            // For center (not used in this case)
             x = width / 2 + (Math.random() - 0.5) * 300;
             yJittered = y + jitterY;
           }
@@ -265,15 +274,13 @@ const TimelineVis = () => {
         nodes.forEach((d) => {
           svgEl
             .append("circle")
+            .attr("class", "data-circle")
             .datum(d)
             .attr("cx", d.x)
             .attr("cy", d.y)
             .attr("r", d.r)
             .attr("fill", "none")
-            .attr("stroke", function (d) {
-              if (!d) return "var(--primary)";
-              return useColor ? d?.color ?? "var(--primary)" : "var(--primary)";
-            })
+            .attr("stroke", useColor ? d.color : "var(--primary)")
             .attr("stroke-width", 1)
             .attr("opacity", d.opacity)
             .on("mouseover", (event, d) =>
@@ -345,12 +352,12 @@ const TimelineVis = () => {
 
           svgEl
             .append("circle")
-            .attr("class", `circle-${year}`)
+            .attr("class", "data-circle")
             .attr("cx", width / 2)
             .attr("cy", height)
             .attr("r", node.r)
             .attr("fill", "none")
-            .attr("stroke", "var(--primary)")
+            .attr("stroke", useColor ? node.color : "var(--primary)")
             .attr("stroke-width", 1.5)
             .attr("opacity", 0)
             .on("mouseover", (event) =>
@@ -393,18 +400,16 @@ const TimelineVis = () => {
       document.documentElement.style.overflow = "auto";
       document.body.style.overflow = "auto";
     };
-  }, [data, skipAnimation]);
+  }, [data, skipAnimation, useColor]);
 
   useEffect(() => {
     if (!animationDone) return;
-    d3.select(svgRef.current)
-      .selectAll("circle")
+    
+    const svg = d3.select(svgRef.current);
+    svg.selectAll(".data-circle")
       .transition()
-      .duration(100)
-      .attr("stroke", function (d) {
-        if (!d) return "var(--primary)";
-        return useColor ? d?.color ?? "var(--primary)" : "var(--primary)";
-      });
+      .duration(300)
+      .attr("stroke", d => useColor ? d.color : "var(--primary)");
   }, [useColor, animationDone]);
 
   useEffect(() => {
@@ -413,7 +418,7 @@ const TimelineVis = () => {
       .selectAll(".cumulative-circle")
       .transition()
       .duration(10)
-      .attr("fill", useWhiteBars ? "transparent" : "transparent")
+      .attr("fill", "transparent")
       .attr("stroke", useWhiteBars ? "var(--primary)" : "var(--bg-dark)");
   }, [useWhiteBars, animationDone]);
 
@@ -430,7 +435,7 @@ const TimelineVis = () => {
         {!animationDone && (
           <>
             <button
-              className="control-button"
+              className="nav-button"
               onClick={() => setSkipAnimation(true)}
             >
               Skip
@@ -438,18 +443,18 @@ const TimelineVis = () => {
           </>
         )}
         <button
-          className="control-button"
+          className="nav-button"
           onClick={() => setUseColor(!useColor)}
         >
-          Color by Country
+          {useColor ? "Single Color" : "Color by Country"}
         </button>
         <button
-          className="control-button"
+          className="nav-button"
           onClick={() => setUseWhiteBars(!useWhiteBars)}
         >
           {useWhiteBars ? "Hide cumulative values" : "Show cumulative values"}
         </button>
-        <Link to="/groups" className="control-button">
+        <Link to="/groups" className="buttons" >
           Explore
         </Link>
       </div>
@@ -474,4 +479,4 @@ const TimelineVis = () => {
   );
 };
 
-export default TimelineVis; 
+export default TimelineVis;
