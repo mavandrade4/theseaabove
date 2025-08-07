@@ -29,7 +29,6 @@ const TimelineWithIntro = () => {
           style={{
             position: "fixed",
             top: 0,
-            left: 0,
             width: "100vw",
             height: "100vh",
             backgroundColor: "--var(--bg-dark)",
@@ -38,7 +37,7 @@ const TimelineWithIntro = () => {
             alignItems: "center",
             flexDirection: "column",
             zIndex: 1000,
-            padding: "20px",
+            padding: "2rem",
             boxSizing: "border-box",
           }}
         >
@@ -70,8 +69,8 @@ const TimelineWithIntro = () => {
               controls={false}
               muted={isMuted}
               style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
+                width: "80vw",
+                height: "100vh",
                 objectFit: "contain",
                 backgroundColor: "--var(--bg-dark)",
               }}
@@ -79,10 +78,9 @@ const TimelineWithIntro = () => {
               onLoadedData={handleLoadedData}
             />
           </div>
-
           <div
             style={{
-              marginTop: "20px",
+              padding: "1rem",
               display: "flex",
               gap: "1rem",
               position: "absolute",

@@ -28,7 +28,6 @@ const TimelineVis = () => {
   const { animationDone, setAnimationDone } = useContext(AnimationContext);
 
   const allYears = Array.from({ length: 2023 - 1956 + 1 }, (_, i) => 1957 + i);
-  allYears.push("unknown");
 
   const annotations = [
     {
@@ -271,23 +270,25 @@ const TimelineVis = () => {
         .style("font-weight", "normal");
 
       if (skipAnimation || canceled) {
-        nodes.forEach((d) => {
+        nodes.forEach((node) => {
           svgEl
             .append("circle")
             .attr("class", "data-circle")
-            .datum(d)
-            .attr("cx", d.x)
-            .attr("cy", d.y)
-            .attr("r", d.r)
+            .datum(node) // Properly bind data
+            .attr("cx", node.x)
+            .attr("cy", node.y)
+            .attr("r", node.r)
             .attr("fill", "none")
-            .attr("stroke", useColor ? d.color : "var(--primary)")
+            .attr("stroke", useColor ? node.color : "var(--primary)")
             .attr("stroke-width", 1)
-            .attr("opacity", d.opacity)
-            .on("mouseover", (event, d) =>
+            .attr("opacity", node.opacity)
+            .on("mouseover", (event) =>
               showTooltip(
-                `Name: ${d.name || "Unknown"}<br>Type: ${d.type}<br>Country: ${
-                  d.country || "Unknown"
-                }<br>Year: ${d.year}`,
+                `Name: ${node.name || "Unknown"}<br>Type: ${
+                  node.type
+                }<br>Country: ${node.country || "Unknown"}<br>Year: ${
+                  node.year
+                }`,
                 event
               )
             )
@@ -344,15 +345,16 @@ const TimelineVis = () => {
           setTimeout(resolve, 100);
         });
 
-        items.forEach((d) => {
+        items.forEach((item) => {
           const node = nodes.find(
-            (n) => n.id === (d.id || `${year}-${d.name || "unknown"}`)
+            (n) => n.id === (item.id || `${year}-${item.name || "unknown"}`)
           );
           if (!node) return;
 
           svgEl
             .append("circle")
             .attr("class", "data-circle")
+            .datum(node) // Properly bind data
             .attr("cx", width / 2)
             .attr("cy", height)
             .attr("r", node.r)
@@ -400,17 +402,21 @@ const TimelineVis = () => {
       document.documentElement.style.overflow = "auto";
       document.body.style.overflow = "auto";
     };
-  }, [data, skipAnimation, useColor]);
+  }, [data, skipAnimation]);
 
   useEffect(() => {
     if (!animationDone) return;
     
     const svg = d3.select(svgRef.current);
-    svg.selectAll(".data-circle")
-      .transition()
-      .duration(300)
-      .attr("stroke", d => useColor ? d.color : "var(--primary)");
-  }, [useColor, animationDone]);
+  svg.selectAll(".data-circle")
+    .transition()
+    .duration(300)
+    .attr("stroke", function() {
+      // Get the bound data or use default color
+      const d = d3.select(this).datum();
+      return d && d.color && useColor ? d.color : "var(--primary)";
+    });
+}, [useColor, animationDone]);
 
   useEffect(() => {
     if (!animationDone) return;
@@ -443,11 +449,12 @@ const TimelineVis = () => {
           </>
         )}
         <button
-          className="nav-button"
-          onClick={() => setUseColor(!useColor)}
-        >
-          {useColor ? "Single Color" : "Color by Country"}
-        </button>
+  className="nav-button"
+  onClick={() => setUseColor(!useColor)}
+  disabled={!animationDone}
+>
+  {useColor ? "Single Color" : "Color by Country"}
+</button>
         <button
           className="nav-button"
           onClick={() => setUseWhiteBars(!useWhiteBars)}

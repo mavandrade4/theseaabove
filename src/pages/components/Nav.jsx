@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import '../../App.css';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import "../../App.css";
 
 const Nav = () => {
   const [hovering, setHovering] = useState(false);
@@ -14,33 +14,33 @@ const Nav = () => {
     };
 
     checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
+    window.addEventListener("resize", checkIfMobile);
 
     return () => {
-      window.removeEventListener('resize', checkIfMobile);
+      window.removeEventListener("resize", checkIfMobile);
     };
   }, []);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
-    document.body.classList.toggle('menu-open', !menuOpen);
+    document.body.classList.toggle("menu-open", !menuOpen);
   };
 
   const closeMenu = () => {
     setMenuOpen(false);
-    document.body.classList.remove('menu-open');
+    document.body.classList.remove("menu-open");
   };
 
   return (
-    <div 
+    <div
       className="nav-container"
       onMouseEnter={!isMobile ? () => setHovering(true) : undefined}
       onMouseLeave={!isMobile ? () => setHovering(false) : undefined}
     >
       {/* Burger Menu Button - Mobile Only */}
       {isMobile && (
-        <button 
-          className={`burger-menu ${menuOpen ? 'open' : ''}`}
+        <button
+          className={`burger-menu ${menuOpen ? "open" : ""}`}
           onClick={toggleMenu}
           aria-label="Menu"
         >
@@ -52,25 +52,58 @@ const Nav = () => {
 
       {/* Mobile Menu */}
       {isMobile && (
-        <div className={`navbar-mobile ${menuOpen ? 'open' : ''}`}>
+        <div className={`navbar-mobile ${menuOpen ? "open" : ""}`}>
           <div className="navbar-mobile-links">
-            <Link to="/" onClick={closeMenu} style={{ fontFamily: 'Unbounded' }}>The Sea Above</Link>
-            <Link to="/timeline" onClick={closeMenu}>Visualization</Link>
-            <Link to="/context" onClick={closeMenu}>Context</Link>
-            <Link to="/data" onClick={closeMenu}>Data</Link>
-            <Link to="/about" onClick={closeMenu}>About</Link>
+            <Link
+              to="/"
+              onClick={closeMenu}
+              style={{ fontFamily: "Unbounded" }}
+            >
+              The Sea Above
+            </Link>
+            <Link to="/timeline" onClick={closeMenu}>
+              Visualization
+            </Link>
+            <Link to="/context" onClick={closeMenu}>
+              Context
+            </Link>
+            <Link to="/data" onClick={closeMenu}>
+              Data
+            </Link>
+            <Link to="/about" onClick={closeMenu}>
+              About
+            </Link>
           </div>
         </div>
       )}
 
       {/* Desktop Navigation */}
-      <nav className={`navbar ${isMobile ? 'mobile-hidden' : ''}`}>
+      <nav className={`navbar ${isMobile ? "mobile-hidden" : ""}`}>
         <div className="navbar-links">
-          <Link to="/" onClick={() => setHovering(false)} style={{ fontFamily: 'Unbounded' }}>The Sea Above</Link>
-          <Link to="/timeline" onClick={() => setHovering(false)}>Visualization</Link>
-          <Link to="/context" onClick={() => setHovering(false)}>Context</Link>
-          <Link to="/data" onClick={() => setHovering(false)}>Data</Link>
-          <Link to="/about" onClick={() => setHovering(false)}>About</Link>
+          <Link
+            to="/"
+            onClick={() => setHovering(false)}
+            style={{ fontFamily: "Unbounded" }}
+          >
+            The Sea Above
+          </Link>
+          <div className="navbar-right">
+            <Link to="/timeline" onClick={() => setHovering(false)}>
+              Timeline
+            </Link>
+            <Link to="/groups" onClick={() => setHovering(false)}>
+              Space Hunt
+            </Link>
+            <Link to="/context" onClick={() => setHovering(false)}>
+              Context
+            </Link>
+            <Link to="/data" onClick={() => setHovering(false)}>
+              Data
+            </Link>
+            <Link to="/about" onClick={() => setHovering(false)}>
+              About
+            </Link>
+          </div>
         </div>
       </nav>
     </div>
