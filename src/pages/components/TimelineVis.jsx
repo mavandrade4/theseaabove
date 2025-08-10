@@ -10,6 +10,130 @@ import { AnimationContext } from "../../context/AnimationContext";
 import { useOutletContext } from "react-router-dom";
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+const InteractiveCircles = ({ width, height }) => {
+  const ref = useRef(null);
+  const [nodes, setNodes] = useState([]);
+
+  useEffect(() => {
+    // Create initial nodes with your visualization style
+    const initialNodes = Array.from({ length: 25 }, (_, i) => ({
+      id: i,
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: 4 + Math.random() * 3, // Similar size range as your data circles
+      vx: Math.random() * 0.3 - 0.15, // Slower movement
+      vy: Math.random() * 0.3 - 0.15,
+      // Use your exact color scheme from the visualization
+      color: Math.random() > 0.5 ? "var(--primary)" : "#4e79a7", // Primary or US color
+      isDragging: false,
+      opacity: 0.9,
+    }));
+    setNodes(initialNodes);
+
+    // Animation loop
+    let animationId;
+    const animate = () => {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) => {
+          if (node.isDragging) return node;
+
+          let x = node.x + node.vx;
+          let y = node.y + node.vy;
+          let vx = node.vx;
+          let vy = node.vy;
+
+          // Boundary checks with bounce
+          if (x < node.r || x > width - node.r) vx *= -1;
+          if (y < node.r || y > height - node.r) vy *= -1;
+
+          // Keep within bounds
+          x = Math.max(node.r, Math.min(width - node.r, x));
+          y = Math.max(node.r, Math.min(height - node.r, y));
+
+          return { ...node, x, y, vx, vy };
+        })
+      );
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(animationId);
+  }, [width, height]);
+
+  const handleDragStart = (id) => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) =>
+        node.id === id ? { ...node, isDragging: true } : node
+      )
+    );
+  };
+
+  const handleDrag = (id, [dx, dy]) => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => {
+        if (node.id !== id) return node;
+
+        const x = Math.max(node.r, Math.min(width - node.r, node.x + dx));
+        const y = Math.max(node.r, Math.min(height - node.r, node.y + dy));
+
+        return { ...node, x, y };
+      })
+    );
+  };
+
+  const handleDragEnd = (id) => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) =>
+        node.id === id ? { ...node, isDragging: false } : node
+      )
+    );
+  };
+
+  return (
+    <svg
+      ref={ref}
+      width={width}
+      height={height}
+      style={{
+        display: "block",
+        background: "transparent",
+        overflow: "visible",
+      }}
+    >
+      {nodes.map((node) => (
+        <circle
+          key={node.id}
+          cx={node.x}
+          cy={node.y}
+          r={node.r}
+          fill="none"
+          stroke={node.color}
+          strokeWidth={1.5}
+          opacity={node.opacity}
+          onPointerDown={() => handleDragStart(node.id)}
+          onPointerMove={(e) => {
+            if (node.isDragging && e.buttons === 1) {
+              const svg = ref.current;
+              const pt = svg.createSVGPoint();
+              pt.x = e.clientX;
+              pt.y = e.clientY;
+              const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+              handleDrag(node.id, [x - node.x, y - node.y]);
+            }
+          }}
+          onPointerUp={() => handleDragEnd(node.id)}
+          onPointerLeave={() => handleDragEnd(node.id)}
+          style={{
+            cursor: "pointer",
+            touchAction: "none",
+            transition: "stroke 0.3s ease", // Smooth color transition if changed
+          }}
+        />
+      ))}
+    </svg>
+  );
+};
 
 const TimelineVis = () => {
   const groupBy = "year";
@@ -34,7 +158,8 @@ const TimelineVis = () => {
       year: "Start",
       title: "Space Objects Timeline",
       message:
-        "Each circle represents an object in Earth's orbit. Satellites appear on the left side, while space debris appears on the right. The visualization shows the accumulation of objects over time, from 1957 to present. The central circles show the total number of objects accumulated each year, growing in size to represent the increasing impact.",
+        "Each circle represents an object in Earth's orbit. Satellites will appear on the left side, while space debris will appear on the right.",
+      interactive: true,
     },
     {
       year: "1957",
@@ -146,21 +271,22 @@ const TimelineVis = () => {
     // Custom color palette matching your theme
     const countryColors = {
       "United States": "#4e79a7",
-      "Russia": "#e15759",
-      "China": "#76b7b2",
-      "Japan": "#59a14f",
-      "France": "#edc948",
-      "India": "#b07aa1",
+      Russia: "#e15759",
+      China: "#76b7b2",
+      Japan: "#59a14f",
+      France: "#edc948",
+      India: "#b07aa1",
       "United Kingdom": "#ff9da7",
-      "Germany": "#9c755f",
-      "Canada": "#bab0ac",
-      "unknown": "#8c8c8c"
+      Germany: "#9c755f",
+      Canada: "#bab0ac",
+      unknown: "#8c8c8c",
     };
 
     const countries = Array.from(
       new Set(filteredData.map((d) => d.country || "unknown"))
     );
-    const colorScale = (country) => countryColors[country] || countryColors["unknown"];
+    const colorScale = (country) =>
+      countryColors[country] || countryColors["unknown"];
 
     const maxCount =
       d3.max(Array.from(dataByGroup.values(), (v) => v.length)) || 1;
@@ -211,15 +337,15 @@ const TimelineVis = () => {
         return arr.map((item, idx) => {
           const baseDistance = currentRadius + 5;
           const angle = Math.random() * Math.PI * 2;
-          
+
           let x, yJittered;
           const jitterY = (Math.random() - 0.5) * 30;
-          
+
           if (direction === "left") {
-            x = width / 2 - baseDistance - (Math.random() * 90);
+            x = width / 2 - baseDistance - Math.random() * 90;
             yJittered = y + jitterY;
           } else if (direction === "right") {
-            x = width / 2 + baseDistance + (Math.random() * 90);
+            x = width / 2 + baseDistance + Math.random() * 90;
             yJittered = y + jitterY;
           } else {
             x = width / 2 + (Math.random() - 0.5) * 300;
@@ -406,17 +532,18 @@ const TimelineVis = () => {
 
   useEffect(() => {
     if (!animationDone) return;
-    
+
     const svg = d3.select(svgRef.current);
-  svg.selectAll(".data-circle")
-    .transition()
-    .duration(300)
-    .attr("stroke", function() {
-      // Get the bound data or use default color
-      const d = d3.select(this).datum();
-      return d && d.color && useColor ? d.color : "var(--primary)";
-    });
-}, [useColor, animationDone]);
+    svg
+      .selectAll(".data-circle")
+      .transition()
+      .duration(300)
+      .attr("stroke", function () {
+        // Get the bound data or use default color
+        const d = d3.select(this).datum();
+        return d && d.color && useColor ? d.color : "var(--primary)";
+      });
+  }, [useColor, animationDone]);
 
   useEffect(() => {
     if (!animationDone) return;
@@ -449,33 +576,50 @@ const TimelineVis = () => {
           </>
         )}
         <button
-  className="nav-button"
-  onClick={() => setUseColor(!useColor)}
-  disabled={!animationDone}
->
-  {useColor ? "Single Color" : "Color by Country"}
-</button>
+          className="nav-button"
+          onClick={() => setUseColor(!useColor)}
+          disabled={!animationDone}
+        >
+          {useColor ? "Single Color" : "Color by Country"}
+        </button>
         <button
           className="nav-button"
           onClick={() => setUseWhiteBars(!useWhiteBars)}
         >
           {useWhiteBars ? "Hide cumulative values" : "Show cumulative values"}
         </button>
-        <Link to="/groups" className="buttons" >
+        <Link to="/groups" className="buttons">
           Explore
         </Link>
       </div>
 
       {currentAnnotation && (
-        <div className="annotation-box">
-          <div className="annotation-header">
-            <span className="annotation-year">{currentAnnotation.year}</span>
-            <h3 className="annotation-title">{currentAnnotation.title}</h3>
+        <div className="annotation-box" data-year={currentAnnotation.year}>
+          {currentAnnotation.interactive ? (
+            <div className="interactive-demo">
+              <InteractiveCircles width={300} height={200} />
+              <p className="demo-instructions">
+                Try dragging the circles! These represent objects in orbit.
+              </p>
+            </div>
+          ) : currentAnnotation.image ? (
+            <div className="annotation-image">
+              <img
+                src={currentAnnotation.image}
+                alt="Timeline visualization explanation"
+              />
+            </div>
+          ) : null}
+          <div className="annotation-content">
+            <div className="annotation-header">
+              <span className="annotation-year">{currentAnnotation.year}</span>
+              <h3 className="annotation-title">{currentAnnotation.title}</h3>
+            </div>
+            <p className="annotation-message">{currentAnnotation.message}</p>
+            <button className="nav-button" onClick={handleResume}>
+              Next
+            </button>
           </div>
-          <p className="annotation-message">{currentAnnotation.message}</p>
-          <button className="nav-button" onClick={handleResume}>
-            Next
-          </button>
         </div>
       )}
 

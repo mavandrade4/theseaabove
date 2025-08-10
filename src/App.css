@@ -592,51 +592,55 @@ a:hover {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
+/* Update your existing annotation-box */
 .annotation-box {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 500px;
+  width: 80vw;
+  max-width: 800px;
+  max-height: 90vh;
   background-color: var(--bg-dark);
   border: 1px solid var(--primary);
   padding: 20px;
   z-index: 1000;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+  display: flex;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.annotation-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.annotation-image {
+  flex: 0 0 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.annotation-image img {
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid var(--primary);
 }
 
 .annotation-box[data-year="Start"] {
   background: rgba(0, 0, 0, 0.8);
   border-left: 4px solid var(--primary);
-}
-
-.annotation-box[data-year="Start"] .annotation-title {
-  font-size: 1.5em;
-  margin-bottom: 0.5em;
+  align-items: center; 
+  max-width: 55vw;
 }
 
 .annotation-header {
   margin-bottom: 15px;
-  border-bottom: 1px solid --var(--primary);
+  border-bottom: 1px solid var(--primary);
   padding-bottom: 10px;
-}
-
-.annotation-year {
-  display: block;
-  font-size: 1.2rem;
-  color: var(--primary);
-  font-weight: bold;
-  margin-bottom: 5px;
-  font-family: "Unbounded", sans-serif;
-}
-
-.annotation-title {
-  font-size: 1.5rem;
-  margin: 0;
-  color: var(--text);
-  font-family: "Unbounded", sans-serif;
 }
 
 .annotation-message {
@@ -647,6 +651,49 @@ a:hover {
   font-family: "JetBrains Mono", monospace;
 }
 
+/* Interactive demo styles */
+.interactive-demo {
+  flex: 0 0 40%;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--primary);
+}
+
+.demo-instructions {
+  font-size: 0.8em;
+  margin-top: 10px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .annotation-box {
+    flex-direction: column;
+    max-width: 90%;
+  }
+  
+  .annotation-image,
+  .interactive-demo {
+    flex: 0 0 auto;
+    margin-bottom: 15px;
+    width: 100%;
+  }
+  
+  .annotation-box[data-year="Start"] .annotation-image img {
+    max-height: 200px;
+  }
+  
+  .interactive-demo {
+    height: 200px;
+  }
+}
 .nav-button {
   width: 100%;
   background-color: var(--bg-dark);
