@@ -280,8 +280,8 @@ const BubbleChart = () => {
       .join("circle")
       .attr("fill", (d) =>
         d.children
-          ? d3.interpolateHcl("#070707", "#5F1E1E")(d.depth / 5)
-          : "#5F1E1E"
+          ? d3.interpolateHcl("#070707", "#bf574f")(d.depth / 5)
+          : "#bf574f"
       )
       .attr("pointer-events", (d) => (!d.children ? "auto" : null))
       .on("mouseover", function (event, d) {
@@ -429,7 +429,7 @@ const BubbleChart = () => {
         <button
           onClick={gameActive ? () => endGame(false) : startGame}
           className="buttons"
-          style={{ background: gameActive ? "#5F1E1E" : "#070707" }}
+          style={{ background: gameActive ? "#bf574f" : "#070707" }}
         >
           {gameActive ? "End Game" : "Start Hunt"}
         </button>
@@ -450,7 +450,7 @@ const BubbleChart = () => {
             top: "10px",
             left: "10px",
             background: "rgba(7,7,7,0.9)",
-            border: "1px solid #5F1E1E",
+            border: "1px solid #bf574f",
             padding: "10px",
             zIndex: 100,
             maxWidth: "300px",
@@ -501,7 +501,7 @@ const BubbleChart = () => {
           style={{
             position: "fixed",
             background: "#f0f0f0",
-            border: "1px solid #5F1E1E",
+            border: "1px solid #bf574f",
             padding: "10px",
             zIndex: 100,
             pointerEvents: "none",

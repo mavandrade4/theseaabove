@@ -589,7 +589,7 @@ const TimelineVis = () => {
           {useWhiteBars ? "Hide cumulative values" : "Show cumulative values"}
         </button>
         <Link to="/groups" className="buttons">
-          Explore
+          Space Hunt
         </Link>
       </div>
 
