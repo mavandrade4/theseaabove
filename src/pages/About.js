@@ -6,6 +6,8 @@ import LoadingScreen from "./components/LoadingScreen";
 import Footer from "./components/Footer";
 import { Link } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
+import WikipediaTooltip from "./components/WikipediaTooltip";
+import HighlightWithTooltip from "./components/HighlightWithTooltip";
 
 const TextFrame = ({ children }) => {
   const [ref, inView] = useInView({
@@ -30,6 +32,30 @@ const About = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
+
+  const [tooltipWords] = useState([
+  'space debris',
+  'machine learning',
+  'artificial intelligence',
+  'data science',
+  'Computer Engineering',
+  'Design and Multimedia',
+  'low Earth orbit',
+  'satellite operators',
+  'Space Traffic Management',
+  'STM',
+  'AI',
+  'University of Coimbra',
+  'CISUC',
+  'software engineering',
+  'space sustainability',
+  'space exploration',
+  'collision avoidance',
+  'satellite',
+  'research institutions',
+  'computer science',
+  'information technology'
+]);
 
   const scrollToSection = (index) => {
     if (isScrolling) return;
@@ -239,18 +265,22 @@ const About = () => {
             <TextFrame>
               <p>
                 Neuraspace is addressing one of the biggest challenges in modern
-                space exploration:{" "}
-                <b className="highlight">
-                  avoiding collisions and reducing space debris
-                </b>
+                space exploration: avoiding collisions and reducing 
+                <HighlightWithTooltip
+                  text="space debris"
+                  tooltipWords={tooltipWords}
+                />
                 .
               </p>
               <p>
                 By leveraging machine learning models to track and predict the
-                movement of objects in low Earth orbit, Neuraspace allows
-                satellite operators to make{" "}
-                <b className="highlight">faster, smarter decisions</b> before
-                accidents occur.
+                movement of objects in low Earth orbit,
+                <HighlightWithTooltip
+                  text="Neuraspace"
+                  tooltipWords={tooltipWords}
+                />
+                allows satellite operators to make faster, smarter decisions
+                before accidents occur.
               </p>
             </TextFrame>
 
@@ -336,15 +366,17 @@ const About = () => {
       >
         <div className="section-container">
           <div className="section-header">
-            <div className="section-number">03</div>
             <h1>ABOUT ME</h1>
+            <div className="section-number">03</div>
           </div>
           <div className="text-container">
             <TextFrame>
               <p>
-                Hi! I'm Mariana, I'm 26, and I have a background in <b className="highlight">Computer
-                Engineering</b>. Right now, I'm working on my <b className="highlight">Master's in Design and
-                Multimedia</b> at the University of Coimbra.
+                Hi! I'm Mariana, I'm 26, and I have a background in{" "}
+                <b className="highlight">Computer Engineering</b>. Right now,
+                I'm working on my{" "}
+                <b className="highlight">Master's in Design and Multimedia</b>{" "}
+                at the University of Coimbra.
               </p>
 
               <p>
