@@ -12,7 +12,10 @@ const Data = () => {
   }, []);
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/api/data`)
+    const data_url = `${process.env.REACT_APP_API_URL}/api/data`;
+    console.log("Fetching data from API");
+    console.log(data_url);
+    fetch(data_url, { headers: { "ngrok-skip-browser-warning": true}})
       .then((res) => res.json())
       .then(setNeuraspaceData)
       .catch((error) => console.error("Error fetching data:", error));

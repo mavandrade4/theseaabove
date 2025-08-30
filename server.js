@@ -20,6 +20,7 @@ const pool = new Pool({
 // API route to fetch data
 app.get("/api/data", async (req, res) => {
   try {
+    console.log("Fetching data from database");
     const result = await pool.query("SELECT * FROM space_object");
     res.json(result.rows);
     //console.log(result);
