@@ -345,6 +345,7 @@ const BubbleChart = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialOffset, setInitialOffset] = useState({ x: 0, y: 0 });
   const [isZooming, setIsZooming] = useState(false);
+  const [justFinishedDragging, setJustFinishedDragging] = useState(false);
 
   // Apply filters without data reduction - show ALL filtered data
   const filteredData = useMemo(() => {
@@ -541,7 +542,13 @@ const BubbleChart = () => {
       if (isDragging) {
         console.log('Ending drag');
         setIsDragging(false);
+        setJustFinishedDragging(true);
         container.style.cursor = 'default';
+        
+        // Clear the flag after a short delay to prevent accidental clicks
+        setTimeout(() => {
+          setJustFinishedDragging(false);
+        }, 150); // 150ms delay should be enough to prevent accidental clicks
       }
     };
 
@@ -581,7 +588,7 @@ const BubbleChart = () => {
       container.removeEventListener('mouseleave', handleMouseLeave);
       container.removeEventListener('dblclick', handleDoubleClick);
     };
-  }, [isDragging, dragStart, initialOffset, focusBranch, isZooming, svgOffset, zoomLevel, hoveredSat]);
+  }, [isDragging, dragStart, initialOffset, focusBranch, isZooming, svgOffset, zoomLevel, hoveredSat, justFinishedDragging]);
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -755,7 +762,7 @@ const BubbleChart = () => {
         setIsRendering(false);
       });
     }, 100),
-    [useCanvas, renderCanvas]
+    [useCanvas, renderCanvas, justFinishedDragging]
   );
 
   // Separate chart rendering logic - optimized for large datasets
@@ -819,6 +826,12 @@ const BubbleChart = () => {
         setHoveredSat(null);
       })
       .on("click", (event, d) => {
+        // Prevent zooming if we just finished dragging
+        if (justFinishedDragging) {
+          event.stopPropagation();
+          return;
+        }
+        
         if (focus !== d && d.children) {
           zoom(event, d);
           event.stopPropagation();
@@ -847,7 +860,8 @@ const BubbleChart = () => {
     svg.on("click", (event) => {
       // Only zoom out if clicking on the background (not on bubbles or labels)
       // AND not when we're about to start dragging
-      if (event.target === svg.node() && !isDragging) {
+      // AND not when we just finished dragging
+      if (event.target === svg.node() && !isDragging && !justFinishedDragging) {
         zoom(event, packedRoot);
         setFocusBranch(null); // Clear focus when zooming out
       }
@@ -911,7 +925,7 @@ const BubbleChart = () => {
 
       focus = d;
     }
-  }, [hierarchyData, focusBranch, dimensions, svgOffset, gameActive, checkSelection, filteredData]);
+  }, [hierarchyData, focusBranch, dimensions, svgOffset, gameActive, checkSelection, filteredData, justFinishedDragging]);
 
   // Use debounced rendering for chart updates - but NOT for svgOffset changes
   useEffect(() => {
