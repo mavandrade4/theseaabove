@@ -83,9 +83,10 @@ const Data = () => {
 
      const combinedData = Array.from(unique.values());
 
-    // Add debug logging for combined data
+    /* Add debug logging for combined data
     console.log("=== Combined Data Summary ===");
     console.log(`Total objects: ${combinedData.length}`);
+    */
 
     // Group by year and type
     const yearTypeCounts = combinedData.reduce((acc, item) => {
@@ -107,7 +108,7 @@ const Data = () => {
       return acc;
     }, {});
 
-    // Log counts per year
+    /* Log counts per year
     console.log("Objects per year and type:");
     Object.entries(yearTypeCounts)
       .sort(([yearA], [yearB]) => yearA - yearB)
@@ -118,7 +119,7 @@ const Data = () => {
           `${counts.debris} debris, ` +
           `${counts.unknown} unknown`
         );
-      });
+      });*/
 
     return combinedData;
   };

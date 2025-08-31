@@ -16,11 +16,9 @@ const Footer = ({ hide }) => {
         <p>It's not science fiction, It's our shared responsibility.</p>
       </div>
       <div className="footer-links">
-        <Link to="/data">data</Link>
         <a href="https://www.uc.pt/">uc</a>
         <a href="https://www.neuraspace.com">neuraspace</a>
         <a href="https://www.cisuc.uc.pt/en">cisuc</a>
-        <Link to="/about">about</Link>
       </div>
     </footer>
   );

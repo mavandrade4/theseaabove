@@ -15,22 +15,19 @@ const InteractiveCircles = ({ width, height }) => {
   const [nodes, setNodes] = useState([]);
 
   useEffect(() => {
-    // Create initial nodes with your visualization style
     const initialNodes = Array.from({ length: 25 }, (_, i) => ({
       id: i,
       x: Math.random() * width,
       y: Math.random() * height,
-      r: 4 + Math.random() * 3, // Similar size range as your data circles
-      vx: Math.random() * 0.3 - 0.15, // Slower movement
+      r: 4 + Math.random() * 3,
+      vx: Math.random() * 0.3 - 0.15,
       vy: Math.random() * 0.3 - 0.15,
-      // Use your exact color scheme from the visualization
       color: Math.random() > 0.5 ? "var(--primary)" : "#4e79a7", // Primary or US color
       isDragging: false,
       opacity: 0.9,
     }));
     setNodes(initialNodes);
 
-    // Animation loop
     let animationId;
     const animate = () => {
       setNodes((prevNodes) =>
@@ -42,11 +39,9 @@ const InteractiveCircles = ({ width, height }) => {
           let vx = node.vx;
           let vy = node.vy;
 
-          // Boundary checks with bounce
           if (x < node.r || x > width - node.r) vx *= -1;
           if (y < node.r || y > height - node.r) vy *= -1;
 
-          // Keep within bounds
           x = Math.max(node.r, Math.min(width - node.r, x));
           y = Math.max(node.r, Math.min(height - node.r, y));
 
@@ -107,7 +102,7 @@ const InteractiveCircles = ({ width, height }) => {
           cx={node.x}
           cy={node.y}
           r={node.r}
-          fill="none"
+          fill="transparent"
           stroke={node.color}
           strokeWidth={1.5}
           opacity={node.opacity}
@@ -162,37 +157,50 @@ const TimelineVis = () => {
       interactive: true,
     },
     {
-      year: "1957",
-      title: "Launch of Sputnik 1",
-      message:
-        "The first artificial satellite by the Soviet Union marks the start of the Space Age.",
-    },
-    {
-      year: "1961",
-      title: "First human in space (Yuri Gagarin)",
-      message: "Space becomes a domain for human activity.",
-    },
-    {
-      year: "1965",
-      title: "First documented space debris incident",
-      message:
-        "The US's Transit 4A satellite's upper stage exploded, creating debris.",
-    },
-    {
-      year: "1978",
-      title: "First comprehensive space debris tracking program",
-      message: "The US begins systematic tracking of orbital debris.",
-    },
-    {
-      year: "2013",
-      title: "Launch of SpaceX's Starlink program begins",
-      message: "Commercial space traffic surges.",
-    },
-    {
-      year: "2023",
-      title: "Regulatory discussions intensify globally",
-      message: "Efforts to regulate space traffic increase.",
-    },
+    "year": "1957",
+    "title": "Launch of Sputnik 1",
+    "message": "The Soviet Union launches the first artificial satellite, marking the dawn of the Space Age. While Sputnik itself burned up re-entering the atmosphere in 1958, its launch represented the first human-made object placed into orbit, fundamentally altering the celestial environment and setting the stage for the future debris problem."
+  },
+  {
+    "year": "1961",
+    "title": "First Human in Space",
+    "message": "Yuri Gagarin's historic flight aboard Vostok 1 turns space into a domain for human activity. This milestone accelerated the space race, leading to a rapid increase in launches and, consequently, the number of objects left in orbit, from spent rocket bodies to decommissioned satellites."
+  },
+  {
+    "year": "1965",
+    "title": "First Documented Satellite Fragmentation Event",
+    "message": "The upper stage of the US's Transit 4A satellite (a nuclear-powered navigational satellite) exploded after its mission ended, creating hundreds of trackable debris pieces. This was the first of many such 'break-up events,' proving that orbital debris could be generated unintentionally and would persist for years."
+  },
+  {
+    "year": "1978",
+    "title": "First Comprehensive Space Debris Tracking Program",
+    "message": "The U.S. Air Force and NASA formally establish a cooperative effort to systematically track and catalog orbital debris. This was driven by the growing recognition that debris posed a collision risk to operational spacecraft. The program leveraged the powerful Space Surveillance Network (SSN) of radars and optical sensors."
+  },
+  {
+    "year": "1996",
+    "title": "First Confirmed On-Orbit Collision with Debris",
+    "message": "The French microsatellite Cerise is struck by a debris fragment from a previous Ariane rocket explosion. This event, which sheared off a portion of Cerise's stabilization boom, was a watershed moment. It provided irrefutable proof that the debris environment was not just a theoretical risk but an actual operational hazard, forcing the industry to take the issue more seriously."
+  },
+  {
+    "year": "2007",
+    "title": "Anti-Satellite Test Creates Catastrophic Debris Field",
+    "message": "China intentionally destroys its defunct Fengyun-1C weather satellite in an anti-satellite (ASAT) weapon test. The event created over 3,500 trackable fragments and an estimated 150,000 debris particles larger than 1 cm—instantly doubling the amount of trackable debris in Low Earth Orbit and drawing intense international condemnation for its recklessness."
+  },
+  {
+    "year": "2009",
+    "title": "First Major Satellite-to-Satellite Collision",
+    "message": "The operational U.S. Iridium 33 communications satellite and the defunct Russian Kosmos-2251 satellite collide over Siberia. This unprecedented accident generated one of the largest debris clouds in history, with over 1,800 trackable pieces, highlighting the critical need for better space traffic management and collision avoidance systems."
+  },
+  {
+    "year": "2013",
+    "title": "Launch of SpaceX's Starlink Program Begins",
+    "message": "The first batch of operational Starlink satellites is launched, heralding a new era of massive commercial constellations. While promising global internet coverage, the sheer scale of these proposals (tens of thousands of satellites) triggers urgent debates about orbital congestion, collision risks, light pollution for astronomy, and the long-term sustainability of the space environment."
+  },
+  {
+    "year": "2023",
+    "title": "Regulatory Discussions Intensify Globally",
+    "message": "Efforts to regulate space traffic and mitigate debris move to the forefront of international diplomacy. Key initiatives include the FCC's new 5-year deorbit rule for US-licensed satellites, the UN's Open-Ended Working Group on space sustainability, and the EU's proposal for a Space Law, as nations and companies grapple with the practical and legal challenges of a crowded orbital commons."
+  }
   ];
 
   const handleResume = () => {
@@ -589,7 +597,7 @@ const TimelineVis = () => {
           {useWhiteBars ? "Hide cumulative values" : "Show cumulative values"}
         </button>
         <Link to="/groups" className="buttons">
-          Space Hunt
+          Space Hunt »
         </Link>
       </div>
 
@@ -597,9 +605,9 @@ const TimelineVis = () => {
         <div className="annotation-box" data-year={currentAnnotation.year}>
           {currentAnnotation.interactive ? (
             <div className="interactive-demo">
-              <InteractiveCircles width={300} height={200} />
+              <InteractiveCircles width={350} height={200} />
               <p className="demo-instructions">
-                Try dragging the circles! These represent objects in orbit.
+                These circles represent objects in orbit.
               </p>
             </div>
           ) : currentAnnotation.image ? (

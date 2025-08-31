@@ -24,10 +24,8 @@ const App = () => {
     "Imagine how dangerous sailing the high seas would be if all the ships ever lost in history were still drifting on top of the water";
   const quoteAuthor = "ESA Director General Jan Wörner, 2019";
 
-  // Simple word-by-word typewriter effect without GSAP for mobile
   const wordTypeWriter = (text, elementRef, callback) => {
     if (isMobile) {
-      // Simple fade-in for mobile
       elementRef.current.textContent = text;
       elementRef.current.style.opacity = 1;
       if (callback) callback();
@@ -278,6 +276,8 @@ const App = () => {
             muted
             loop
             playsInline
+            onClick={() => { navigate("/timeline"); }}
+            cursor="pointer"
           />
         </div>
         <div className="quote-container">

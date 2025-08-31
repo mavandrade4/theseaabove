@@ -2,6 +2,255 @@ import React, { useState, useEffect, useRef, useContext, useMemo, useCallback } 
 import * as d3 from "d3";
 import { dataContext } from "../../context/dataContext";
 import "../../App.css";
+const InteractiveCircles = ({ width, height }) => {
+  const ref = useRef(null);
+  const [nodes, setNodes] = useState([]);
+  const [bubbles, setBubbles] = useState([]);
+
+  useEffect(() => {
+    // Create 5-7 larger bubbles
+    const bubbleCount = 5 + Math.floor(Math.random() * 3);
+    const newBubbles = Array.from({ length: bubbleCount }, (_, i) => {
+      const radius = 30 + Math.random() * 40;
+      return {
+        id: `bubble-${i}`,
+        x: radius + Math.random() * (width - radius * 2),
+        y: radius + Math.random() * (height - radius * 2),
+        r: radius,
+        vx: Math.random() * 0.2 - 0.1,
+        vy: Math.random() * 0.2 - 0.1,
+        color: `#bf574f`,
+        opacity: 0.5,
+        isDragging: false,
+      };
+    });
+    
+    setBubbles(newBubbles);
+
+    // Create smaller nodes (25 total)
+    const initialNodes = Array.from({ length: 25 }, (_, i) => {
+      // Assign each node to a bubble
+      const parentBubble = newBubbles[i % newBubbles.length];
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * (parentBubble.r * 0.7); // Stay inside parent bubble
+      
+      return {
+        id: i,
+        parentId: parentBubble.id,
+        x: parentBubble.x + Math.cos(angle) * distance,
+        y: parentBubble.y + Math.sin(angle) * distance,
+        r: 3 + Math.random() * 2,
+        vx: Math.random() * 0.4 - 0.2,
+        vy: Math.random() * 0.4 - 0.2,
+        color: "var(--primary)",
+        isDragging: false,
+        opacity: 0.9,
+      };
+    });
+    
+    setNodes(initialNodes);
+
+    let animationId;
+    const animate = () => {
+      setBubbles(prevBubbles => 
+        prevBubbles.map(bubble => {
+          if (bubble.isDragging) return bubble;
+
+          let x = bubble.x + bubble.vx;
+          let y = bubble.y + bubble.vy;
+          let vx = bubble.vx;
+          let vy = bubble.vy;
+
+          if (x < bubble.r || x > width - bubble.r) vx *= -1;
+          if (y < bubble.r || y > height - bubble.r) vy *= -1;
+
+          x = Math.max(bubble.r, Math.min(width - bubble.r, x));
+          y = Math.max(bubble.r, Math.min(height - bubble.r, y));
+
+          return { ...bubble, x, y, vx, vy };
+        })
+      );
+      
+      setNodes(prevNodes => 
+        prevNodes.map(node => {
+          if (node.isDragging) return node;
+          
+          const parentBubble = newBubbles.find(b => b.id === node.parentId);
+          if (!parentBubble) return node;
+          
+          // Calculate distance from parent center
+          const dx = node.x - parentBubble.x;
+          const dy = node.y - parentBubble.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          let x = node.x + node.vx;
+          let y = node.y + node.vy;
+          let vx = node.vx;
+          let vy = node.vy;
+          
+          // Bounce off parent bubble boundary
+          if (distance > parentBubble.r - node.r) {
+            const angle = Math.atan2(dy, dx);
+            x = parentBubble.x + Math.cos(angle) * (parentBubble.r - node.r - 1);
+            y = parentBubble.y + Math.sin(angle) * (parentBubble.r - node.r - 1);
+            
+            // Reflect velocity
+            const dotProduct = vx * Math.cos(angle) + vy * Math.sin(angle);
+            vx -= 1.8 * dotProduct * Math.cos(angle);
+            vy -= 1.8 * dotProduct * Math.sin(angle);
+          }
+          
+          // Add some randomness to movement
+          vx += (Math.random() - 0.5) * 0.05;
+          vy += (Math.random() - 0.5) * 0.05;
+          
+          // Apply damping
+          vx *= 0.99;
+          vy *= 0.99;
+
+          return { ...node, x, y, vx, vy };
+        })
+      );
+      
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(animationId);
+  }, [width, height]);
+
+  const handleBubbleDragStart = (id) => {
+    setBubbles(prevBubbles =>
+      prevBubbles.map(bubble =>
+        bubble.id === id ? { ...bubble, isDragging: true } : bubble
+      )
+    );
+  };
+
+  const handleBubbleDrag = (id, [dx, dy]) => {
+    setBubbles(prevBubbles =>
+      prevBubbles.map(bubble => {
+        if (bubble.id !== id) return bubble;
+
+        const x = Math.max(bubble.r, Math.min(width - bubble.r, bubble.x + dx));
+        const y = Math.max(bubble.r, Math.min(height - bubble.r, bubble.y + dy));
+
+        return { ...bubble, x, y };
+      })
+    );
+  };
+
+  const handleBubbleDragEnd = (id) => {
+    setBubbles(prevBubbles =>
+      prevBubbles.map(bubble =>
+        bubble.id === id ? { ...bubble, isDragging: false } : bubble
+      )
+    );
+  };
+
+  const handleNodeDragStart = (id) => {
+    setNodes(prevNodes =>
+      prevNodes.map(node =>
+        node.id === id ? { ...node, isDragging: true } : node
+      )
+    );
+  };
+
+  const handleNodeDrag = (id, [dx, dy]) => {
+    setNodes(prevNodes =>
+      prevNodes.map(node => {
+        if (node.id !== id) return node;
+
+        const x = Math.max(node.r, Math.min(width - node.r, node.x + dx));
+        const y = Math.max(node.r, Math.min(height - node.r, node.y + dy));
+
+        return { ...node, x, y };
+      })
+    );
+  };
+
+  const handleNodeDragEnd = (id) => {
+    setNodes(prevNodes =>
+      prevNodes.map(node =>
+        node.id === id ? { ...node, isDragging: false } : node
+      )
+    );
+  };
+
+  return (
+    <svg
+      ref={ref}
+      width={width}
+      height={height}
+      style={{
+        display: "block",
+        background: "transparent",
+        overflow: "visible",
+      }}
+    >
+      {/* Render larger bubbles first */}
+      {bubbles.map(bubble => (
+        <circle
+          key={bubble.id}
+          cx={bubble.x}
+          cy={bubble.y}
+          r={bubble.r}
+          fill={bubble.color}
+          strokeWidth={1.5}
+          opacity={bubble.opacity}
+          onPointerDown={() => handleBubbleDragStart(bubble.id)}
+          onPointerMove={(e) => {
+            if (bubble.isDragging && e.buttons === 1) {
+              const svg = ref.current;
+              const pt = svg.createSVGPoint();
+              pt.x = e.clientX;
+              pt.y = e.clientY;
+              const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+              handleBubbleDrag(bubble.id, [x - bubble.x, y - bubble.y]);
+            }
+          }}
+          onPointerUp={() => handleBubbleDragEnd(bubble.id)}
+          onPointerLeave={() => handleBubbleDragEnd(bubble.id)}
+          style={{
+            cursor: "pointer",
+            touchAction: "none",
+          }}
+        />
+      ))}
+      
+      {/* Render smaller nodes on top */}
+      {nodes.map(node => (
+        <circle
+          key={node.id}
+          cx={node.x}
+          cy={node.y}
+          r={node.r}
+          fill={node.color}
+          strokeWidth={1}
+          opacity={node.opacity}
+          onPointerDown={() => handleNodeDragStart(node.id)}
+          onPointerMove={(e) => {
+            if (node.isDragging && e.buttons === 1) {
+              const svg = ref.current;
+              const pt = svg.createSVGPoint();
+              pt.x = e.clientX;
+              pt.y = e.clientY;
+              const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+              handleNodeDrag(node.id, [x - node.x, y - node.y]);
+            }
+          }}
+          onPointerUp={() => handleNodeDragEnd(node.id)}
+          onPointerLeave={() => handleNodeDragEnd(node.id)}
+          style={{
+            cursor: "pointer",
+            touchAction: "none",
+          }}
+        />
+      ))}
+    </svg>
+  );
+};
 
 // Throttle utility function
 const throttle = (func, limit) => {
@@ -70,6 +319,7 @@ const BubbleChart = () => {
   const renderTimeoutRef = useRef();
   const canvasRef = useRef();
 
+  const [showStartMessage, setShowStartMessage] = useState(true);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [hoveredSat, setHoveredSat] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -502,6 +752,9 @@ const BubbleChart = () => {
       .sort((a, b) => b.value - a.value);
 
     const { width, height } = dimensions;
+    if (width === 0 || height === 0) {
+      return; // Skip rendering until ResizeObserver has set real dimensions
+    }
     const svg = d3.select(svgRef.current);
     
     // Clear existing content
@@ -512,7 +765,10 @@ const BubbleChart = () => {
 
     const g = svg
       .append("g")
-      .attr("transform", `translate(${width / 2 + svgOffset.x},${height / 2 + svgOffset.y})`);
+      .attr(
+        "transform",
+        `translate(${width / 2 + svgOffset.x},${height / 2 + svgOffset.y})`
+      );
     let focus = packedRoot;
     let view;
 
@@ -577,10 +833,15 @@ const BubbleChart = () => {
       }
     });
 
+    //console.log("focus", focus);
+    //console.log("zoom args", [focus.x, focus.y, focus.r * 2]);
     zoomTo([focus.x, focus.y, focus.r * 2]);
 
     function zoomTo(v) {
+      if (width === 0 || height === 0) return;
+      //console.log("zoomTo input", v);
       const k = width / v[2];
+      //console.log("k", k);
       view = v;
       
       // Batch DOM updates for better performance
