@@ -434,14 +434,27 @@ const BubbleChart = () => {
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
       const newZoom = Math.max(0.1, Math.min(5, zoomLevel * zoomFactor));
       
-      // Calculate how much the zoom will change
-      const zoomRatio = newZoom / zoomLevel;
+      // Calculate the center of the viewport
+      const centerX = dimensions.width / 2;
+      const centerY = dimensions.height / 2;
       
-      // Adjust offset so that the point under the cursor stays in the same place
-      const newOffsetX = mouseX - (mouseX - svgOffset.x) * zoomRatio;
-      const newOffsetY = mouseY - (mouseY - svgOffset.y) * zoomRatio;
+      // Calculate the current mouse position in the data coordinate system
+      const dataX = (mouseX - centerX - svgOffset.x) / zoomLevel;
+      const dataY = (mouseY - centerY - svgOffset.y) / zoomLevel;
+      
+      // Calculate new offset to keep the mouse over the same data point
+      const newOffsetX = mouseX - centerX - dataX * newZoom;
+      const newOffsetY = mouseY - centerY - dataY * newZoom;
       
       // Update both zoom and offset
+      console.log('Zoom update:', { 
+        oldZoom: zoomLevel, 
+        newZoom, 
+        oldOffset: svgOffset, 
+        newOffset: { x: newOffsetX, y: newOffsetY },
+        mousePos: { x: mouseX, y: mouseY },
+        dataPos: { x: dataX, y: dataY }
+      });
       setZoomLevel(newZoom);
       setSvgOffset({ x: newOffsetX, y: newOffsetY });
     };
@@ -451,7 +464,7 @@ const BubbleChart = () => {
     return () => {
       container.removeEventListener('wheel', handleWheel);
     };
-  }, [zoomLevel, svgOffset]);
+  }, [zoomLevel, svgOffset, dimensions]);
 
   // Separate useEffect for drag event listeners to avoid conflicts
   useEffect(() => {
@@ -509,8 +522,9 @@ const BubbleChart = () => {
       if (!containerRef.current) return;
       
       const containerRect = containerRef.current.getBoundingClientRect();
-      const mouseX = (e.clientX - containerRect.left) / zoomLevel;
-      const mouseY = (e.clientY - containerRect.top) / zoomLevel;
+      // Account for zoom and offset when calculating mouse position
+      const mouseX = (e.clientX - containerRect.left - svgOffset.x - dimensions.width / 2) / zoomLevel;
+      const mouseY = (e.clientY - containerRect.top - svgOffset.y - dimensions.height / 2) / zoomLevel;
       setMousePosition({ x: mouseX, y: mouseY });
 
       // REMOVED edge scrolling - it was causing unwanted movement
@@ -701,14 +715,19 @@ const BubbleChart = () => {
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
     
+    // Apply zoom and pan transformations
+    ctx.save();
+    ctx.scale(zoomLevel, zoomLevel);
+    ctx.translate((width / 2 + svgOffset.x) / zoomLevel, (height / 2 + svgOffset.y) / zoomLevel);
+    
     // Simple bubble rendering for performance
     ctx.fillStyle = '#bf574f';
     ctx.globalAlpha = 0.7;
     
     filteredData.forEach(item => {
       // Simple positioning - you can make this more sophisticated
-      const x = (item.year - 1957) / (2024 - 1957) * width;
-      const y = Math.random() * height;
+      const x = (item.year - 1957) / (2024 - 1957) * width - width / 2;
+      const y = Math.random() * height - height / 2;
       const radius = 3;
       
       ctx.beginPath();
@@ -716,8 +735,9 @@ const BubbleChart = () => {
       ctx.fill();
     });
     
+    ctx.restore();
     ctx.globalAlpha = 1.0;
-  }, [filteredData, dimensions]);
+  }, [filteredData, dimensions, svgOffset, zoomLevel]);
 
   // Debounced chart rendering to prevent excessive updates
   const debouncedRenderChart = useCallback(
@@ -767,7 +787,7 @@ const BubbleChart = () => {
       .append("g")
       .attr(
         "transform",
-        `translate(${width / 2 + svgOffset.x},${height / 2 + svgOffset.y})`
+        `scale(${zoomLevel}) translate(${(width / 2 + svgOffset.x) / zoomLevel},${(height / 2 + svgOffset.y) / zoomLevel})`
       );
     let focus = packedRoot;
     let view;
@@ -910,7 +930,7 @@ const BubbleChart = () => {
     };
   }, [hierarchyData, focusBranch, dimensions, debouncedRenderChart]);
 
-  // Handle offset updates without rebuilding the chart
+  // Handle offset and zoom updates without rebuilding the chart
   useEffect(() => {
     if (!svgRef.current || useCanvas) return;
     
@@ -918,10 +938,20 @@ const BubbleChart = () => {
     const g = svg.select('g');
     
     if (g.size() > 0) {
-      // Update the transform of the main group without rebuilding
-      g.attr("transform", `translate(${dimensions.width / 2 + svgOffset.x},${dimensions.height / 2 + svgOffset.y})`);
+      // Update the transform of the main group with both translation and scaling
+      // The scale is applied first, then the translation
+      const transform = `scale(${zoomLevel}) translate(${(dimensions.width / 2 + svgOffset.x) / zoomLevel},${(dimensions.height / 2 + svgOffset.y) / zoomLevel})`;
+      console.log('Transform update:', { zoomLevel, svgOffset, transform });
+      g.attr("transform", transform);
     }
-  }, [svgOffset, dimensions, useCanvas]);
+  }, [svgOffset, zoomLevel, dimensions, useCanvas]);
+
+  // Handle canvas re-rendering when zoom or offset changes
+  useEffect(() => {
+    if (useCanvas) {
+      renderCanvas();
+    }
+  }, [useCanvas, svgOffset, zoomLevel, renderCanvas]);
 
   // Auto-switch to canvas for very large datasets
   useEffect(() => {
@@ -956,6 +986,49 @@ const BubbleChart = () => {
     setSvgOffset({ x: 0, y: 0 });
     setZoomLevel(1);
   }, []);
+
+  const StartMessage = useMemo(() => showStartMessage && showStartMessage && (
+    <div className="start-message-overlay">
+      <div className="start-message-content">
+        <div className="start-message-image">
+          <div className="interactive-demo">
+            <InteractiveCircles width={300} height={200} />
+            <p className="demo-instructions">
+              Each small circle represents an object in Earth's orbit. Bigger circles are groups of related objects.
+            </p>
+          </div>
+        </div>
+        
+        <div className="start-message-text">
+          <h2>Welcome to Space Hunt</h2>
+          
+          <p>
+            Explore Earth's orbital environment through this interactive visualization. 
+            Each of the smaller circles represents an object in space - satellites, debris and others.
+          </p>
+          
+          <div className="start-message-controls">
+            <h4>Controls:</h4>
+            <ul>
+              <li>Scroll to zoom in and out</li>
+              <li>Click and drag to pan around the visualization</li>
+              <li>Click on bubbles to explore hierarchical data</li>
+              <li>Hover over objects to see details</li>
+              <li>Use the filters to narrow down the data</li>
+              <li>Try the Space Hunt game</li>
+            </ul>
+          </div>
+          
+          <button
+            className="buttons"
+            onClick={() => setShowStartMessage(false)}
+          >
+            Start Exploring
+          </button>
+        </div>
+      </div>
+    </div>
+  ), [showStartMessage]);
 
   // Memoized filter UI component
   const FilterUI = useMemo(() => (
@@ -1155,6 +1228,7 @@ const BubbleChart = () => {
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
+      {StartMessage}
       {FilterUI}
       {GamePanel}
 
@@ -1189,8 +1263,6 @@ const BubbleChart = () => {
             width="100%" 
             height="100%"
             style={{
-              transform: `scale(${zoomLevel})`,
-              transformOrigin: '0 0',
               userSelect: "none",
               WebkitUserSelect: "none",
               MozUserSelect: "none",
@@ -1205,8 +1277,6 @@ const BubbleChart = () => {
             width="100%" 
             height="100%"
             style={{
-              transform: `scale(${zoomLevel})`,
-              transformOrigin: '0 0',
               userSelect: "none",
               WebkitUserSelect: "none",
               MozUserSelect: "none",
