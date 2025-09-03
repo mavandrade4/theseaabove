@@ -159,7 +159,7 @@ const TimelineVis = () => {
     {
     "year": "1957",
     "title": "Launch of Sputnik 1",
-    "message": "The Soviet Union launches the first artificial satellite, marking the dawn of the Space Age. While Sputnik itself burned up re-entering the atmosphere in 1958, its launch represented the first human-made object placed into orbit, fundamentally altering the celestial environment and setting the stage for the future debris problem."
+    "message": "The Soviet Union launches the first artificial satellite, marking the dawn of the Space Age. While Sputnik itself burned up re-entering the atmosphere in 1958, its launch represented the first human-made object placed into orbit, fundamentally altering the celestial environment and setting the stage for the current debris problem."
   },
   {
     "year": "1961",
@@ -565,12 +565,10 @@ const TimelineVis = () => {
 
   return (
     <div className="narrative">
-      {!animationDone && (
-        <>
           <div className="satellite-label">Satellites</div>
           <div className="debris-label">Debris</div>
-        </>
-      )}
+        
+      
 
       <div className="timeline-controls">
         {!animationDone && (

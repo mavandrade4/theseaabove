@@ -16,7 +16,7 @@ const InteractiveCircles = ({ width, height }) => {
 
   useEffect(() => {
     // Create 5-7 larger bubbles
-    const bubbleCount = 5 + Math.floor(Math.random() * 3);
+    const bubbleCount = 3 + Math.floor(Math.random() * 3);
     const newBubbles = Array.from({ length: bubbleCount }, (_, i) => {
       const radius = 30 + Math.random() * 40;
       return {
@@ -1008,14 +1008,12 @@ const BubbleChart = () => {
 
     labelSelection.current = g
       .append("g")
-      .style("font", "10px sans-serif")
       .attr("pointer-events", "none")
       .attr("text-anchor", "middle")
+      .attr("className", "labels")
       .selectAll("text")
       .data(topLevelNodes)
       .join("text")
-      .style("fill-opacity", 1)
-      .style("display", "inline")
       .text((d) => d.data.name);
 
     svg.on("click", (event) => {
@@ -1413,7 +1411,7 @@ const BubbleChart = () => {
         className="game-panel"
         style={{
           position: "absolute",
-          top: "10px",
+          top: "6vh",
           left: "10px",
           background: "rgba(7,7,7,0.9)",
           border: "1px solid #bf574f",
@@ -1509,6 +1507,35 @@ const BubbleChart = () => {
     );
   }, [hoveredSat, gameActive, checkSelection]);
 
+  const HelpButton = useMemo(
+    () => (
+      <div className="help-button">
+        i
+        <div className="help-tooltip">
+          <div className="annotation-header">
+                <h3 className="annotation-title">Space Hunt</h3>
+              </div>
+              <p>
+                Explore Earth's orbital environment through this interactive
+                visualization. Each of the smaller circles represents an object
+                in space - satellites, debris and others.
+              </p>
+              <div className="start-message-controls">
+                <p>
+                  Scroll to zoom in and out<br></br>
+                  Click and drag to pan around<br></br>
+                  Click on bubbles to explore data<br></br>
+                  Hover over objects to see details<br></br>
+                  Use the filters to narrow down the data<br></br>
+                  Try the Space Hunt game
+                </p>
+              </div>
+        </div>
+      </div>
+    ),
+    []
+  );
+
   return (
     <div
       ref={containerRef}
@@ -1601,6 +1628,7 @@ const BubbleChart = () => {
       </div>
 
       {Tooltip}
+      {HelpButton}
     </div>
   );
 };

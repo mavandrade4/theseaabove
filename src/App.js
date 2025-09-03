@@ -369,13 +369,7 @@ const App = () => {
             style={{ justifyContent: "center" }}
           >
             <Link className="buttons" to="/timeline">
-              Timeline
-            </Link>
-            <Link className="buttons" to="/groups">
-              Space Hunt
-            </Link>
-            <Link className="buttons" to="/data">
-              The Data
+              Start »
             </Link>
           </div>
         </div>
