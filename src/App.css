@@ -540,7 +540,8 @@ a:hover {
 }
 
 .satellite-label,
-.debris-label {
+.debris-label,
+.labels {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
@@ -550,7 +551,14 @@ a:hover {
   user-select: none;
   pointer-events: none;
   z-index: 10;
+  font-size: 1rem;
   font-family: "Unbounded", sans-serif;
+}
+
+.labels {
+  color: var(--text);
+  background-color: var(--bg-dark);
+  text-transform: uppercase;
 }
 
 .satellite-label {
@@ -1021,6 +1029,91 @@ body.scroll-locked {
 }
 
 /* Explore */
+/* Help Button Styles */
+.help-button {
+  position: absolute;
+  z-index: 100;
+  bottom: 5vh;
+  right: 5vw;
+  width: 35px;
+  height: 35px;
+  background: var(--bg-dark);
+  border: 1px solid var(--primary);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.help-button:hover {
+  background: var(--primary);
+  color: var(--text);
+}
+
+.help-tooltip {
+  position: absolute;
+  bottom: 50px;
+  right: 0;
+  background: rgba(7, 7, 7, 0.8);
+  border: 1px solid var(--primary);
+  padding: 15px;
+  border-radius: 4px;
+  height: auto;
+  width: 30vw;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 101;
+}
+
+.help-button:hover .help-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-5px);
+}
+
+.help-tooltip p:first-child {
+  margin: 0 0 10px 0;
+  font-weight: bold;
+}
+
+.help-tooltip p {
+  margin: 5px 0;
+  font-size: 0.85rem;
+}
+
+/* Mobile responsiveness for help button */
+@media (max-width: 768px) {
+  .help-button {
+    bottom: 5vh;
+    left: 5vw;
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+
+  .help-tooltip {
+    height: 3vh;
+    width: auto;
+    font-size: 0.8rem;
+    left: -80px;
+  }
+}
+
 /* Start Message */
 .start-message-overlay {
   position: absolute;
@@ -1222,6 +1315,7 @@ body.scroll-locked {
 }
 
 .game-panel {
+  
   font-family: "JetBrains Mono", monospace;
   color: var(--text);
   margin-top: 18vh;
@@ -1616,19 +1710,6 @@ body.scroll-locked {
   .control-button {
     padding: 6px 12px;
     font-size: 0.9rem;
-  }
-
-  .satellite-label,
-  .debris-label {
-    font-size: 1rem;
-  }
-
-  .satellite-label {
-    left: 20%;
-  }
-
-  .debris-label {
-    left: 80%;
   }
 
   .annotation-box {
