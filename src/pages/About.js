@@ -6,7 +6,6 @@ import LoadingScreen from "./components/LoadingScreen";
 import Footer from "./components/Footer";
 import { Link } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
-import WikipediaTooltip from "./components/WikipediaTooltip";
 import HighlightWithTooltip from "./components/HighlightWithTooltip";
 
 const TextFrame = ({ children }) => {
@@ -54,7 +53,8 @@ const About = () => {
   'satellite',
   'research institutions',
   'computer science',
-  'information technology'
+  'information technology',
+  'Neuraspace'
 ]);
 
   const scrollToSection = (index) => {
@@ -265,9 +265,9 @@ const About = () => {
             <TextFrame>
               <p>
                 Neuraspace is addressing one of the biggest challenges in modern
-                space exploration: avoiding collisions and reducing 
+                space exploration: avoiding collisions and reducing
                 <HighlightWithTooltip
-                  text="space debris"
+                  text=" space debris "
                   tooltipWords={tooltipWords}
                 />
                 .
@@ -287,13 +287,10 @@ const About = () => {
             <TextFrame>
               <p>
                 Fewer false alarms and faster responses mean{" "}
-                <b className="highlight">
-                  fewer unnecessary alerts and quicker decision-making , saving
-                  fuel, time, and money.
-                </b>
+                <HighlightWithTooltip text="fewer unnecessary alerts and quicker decision-making , saving fuel, time, and money." />
               </p>
               <p>
-                The <b className="highlight">AI Fights Space Debris</b> project
+                The <HighlightWithTooltip text="AI Fights Space Debris" /> project
                 supports this mission by integrating Neuraspace's tools into a
                 powerful Space Traffic Management (STM) platform which helps
                 extend the life of satellites and reduce operational costs.
@@ -326,11 +323,7 @@ const About = () => {
                 Founded in 1991, CISUC brings together a team of over 280
                 researchers — including professors, postdocs, and PhD students —
                 working on innovative projects in areas such as
-                <b className="highlight">
-                  {" "}
-                  artificial intelligence, software engineering, and data
-                  science
-                </b>
+                <HighlightWithTooltip text="artificial intelligence" />, <HighlightWithTooltip text="software engineering" />, and <HighlightWithTooltip text="data science" />
                 .
               </p>
             </TextFrame>
@@ -373,9 +366,12 @@ const About = () => {
             <TextFrame>
               <p>
                 Hi! I'm Mariana, I'm 26, and I have a background in{" "}
-                <b className="highlight">Computer Engineering</b>. Right now,
+                <HighlightWithTooltip
+                  text="Computer Engineering"
+                  tooltipWords={tooltipWords}
+                />. Right now,
                 I'm working on my{" "}
-                <b className="highlight">Master's in Design and Multimedia</b>{" "}
+                <HighlightWithTooltip text="Master's in Design and Multimedia" />{" "}
                 at the University of Coimbra.
               </p>
 

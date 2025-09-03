@@ -433,7 +433,31 @@ const BubbleChart = () => {
   const uniqueValues = useMemo(() => {
     const values = {};
     ["type", "subtype", "country", "year"].forEach((key) => {
-      values[key] = [...new Set(rawData.map((item) => item[key] || "unknown"))];
+      const uniqueVals = [...new Set(rawData.map((item) => item[key] || "unknown"))];
+      
+      // Sort each filter type appropriately
+      if (key === "year") {
+        // Sort years in descending order (newest first)
+        values[key] = uniqueVals.sort((a, b) => {
+          if (a === "unknown") return 1;
+          if (b === "unknown") return -1;
+          return parseInt(b) - parseInt(a);
+        });
+      } else if (key === "country") {
+        // Sort countries alphabetically, with "unknown" at the end
+        values[key] = uniqueVals.sort((a, b) => {
+          if (a === "unknown") return 1;
+          if (b === "unknown") return -1;
+          return a.localeCompare(b);
+        });
+      } else {
+        // Sort type and subtype alphabetically, with "unknown" at the end
+        values[key] = uniqueVals.sort((a, b) => {
+          if (a === "unknown") return 1;
+          if (b === "unknown") return -1;
+          return a.localeCompare(b);
+        });
+      }
     });
     return values;
   }, [rawData]);
