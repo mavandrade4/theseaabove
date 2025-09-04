@@ -211,19 +211,19 @@ const InteractiveCircles = ({ width, height }) => {
           fill={bubble.color}
           strokeWidth={1.5}
           opacity={bubble.opacity}
-          onPointerDown={() => handleBubbleDragStart(bubble.id)}
-          onPointerMove={(e) => {
-            if (bubble.isDragging && e.buttons === 1) {
-              const svg = ref.current;
-              const pt = svg.createSVGPoint();
-              pt.x = e.clientX;
-              pt.y = e.clientY;
-              const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
-              handleBubbleDrag(bubble.id, [x - bubble.x, y - bubble.y]);
-            }
-          }}
-          onPointerUp={() => handleBubbleDragEnd(bubble.id)}
-          onPointerLeave={() => handleBubbleDragEnd(bubble.id)}
+          // onPointerDown={() => handleBubbleDragStart(bubble.id)}
+          // onPointerMove={(e) => {
+          //   if (bubble.isDragging && e.buttons === 1) {
+          //     const svg = ref.current;
+          //     const pt = svg.createSVGPoint();
+          //     pt.x = e.clientX;
+          //     pt.y = e.clientY;
+          //     const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+          //     handleBubbleDrag(bubble.id, [x - bubble.x, y - bubble.y]);
+          //   }
+          // }}
+          // onPointerUp={() => handleBubbleDragEnd(bubble.id)}
+          // onPointerLeave={() => handleBubbleDragEnd(bubble.id)}
           style={{
             cursor: "pointer",
             touchAction: "none",
@@ -241,19 +241,19 @@ const InteractiveCircles = ({ width, height }) => {
           fill={node.color}
           strokeWidth={1}
           opacity={node.opacity}
-          onPointerDown={() => handleNodeDragStart(node.id)}
-          onPointerMove={(e) => {
-            if (node.isDragging && e.buttons === 1) {
-              const svg = ref.current;
-              const pt = svg.createSVGPoint();
-              pt.x = e.clientX;
-              pt.y = e.clientY;
-              const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
-              handleNodeDrag(node.id, [x - node.x, y - node.y]);
-            }
-          }}
-          onPointerUp={() => handleNodeDragEnd(node.id)}
-          onPointerLeave={() => handleNodeDragEnd(node.id)}
+          // onPointerDown={() => handleNodeDragStart(node.id)}
+          // onPointerMove={(e) => {
+          //   if (node.isDragging && e.buttons === 1) {
+          //     const svg = ref.current;
+          //     const pt = svg.createSVGPoint();
+          //     pt.x = e.clientX;
+          //     pt.y = e.clientY;
+          //     const { x, y } = pt.matrixTransform(svg.getScreenCTM().inverse());
+          //     handleNodeDrag(node.id, [x - node.x, y - node.y]);
+          //   }
+          // }}
+          // onPointerUp={() => handleNodeDragEnd(node.id)}
+          // onPointerLeave={() => handleNodeDragEnd(node.id)}
           style={{
             cursor: "pointer",
             touchAction: "none",
@@ -349,14 +349,18 @@ const BubbleChart = () => {
   const [gameMessage, setGameMessage] = useState("");
   const [gameEnded, setGameEnded] = useState(false);
   const [svgOffset, setSvgOffset] = useState({ x: 0, y: 0 });
+  const [newSvgOffset, setNewSvgOffset] = useState({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isRendering, setIsRendering] = useState(false);
   const [useCanvas, setUseCanvas] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialOffset, setInitialOffset] = useState({ x: 0, y: 0 });
+  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [hasMoved, setHasMoved] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
   const [justFinishedDragging, setJustFinishedDragging] = useState(false);
+  const justFinishedDraggingRef = useRef(false);
 
   // Track if D3 zoom is currently active
   const [d3ZoomActive, setD3ZoomActive] = useState(false);
@@ -560,7 +564,7 @@ const BubbleChart = () => {
     zoomLevel,
     svgOffset,
     dimensions,
-    d3ZoomActive,
+    // d3ZoomActive,
     focusBranch,
     switchingToManual,
   ]);
@@ -571,36 +575,18 @@ const BubbleChart = () => {
     if (!container) return;
 
     const handleMouseDown = (e) => {
-      // Start dragging on left mouse button anywhere in the container
+      // Start tracking mouse down on left mouse button anywhere in the container
       // Only exclude actual interactive elements like buttons and form controls
       const isInteractiveElement = e.target.closest(
         'button, select, input, textarea, a, [role="button"]'
       );
 
       if (e.button === 0 && !isInteractiveElement) {
-        // console.log('Starting drag:', { x: e.clientX, y: e.clientY, offset: svgOffset });
-        setIsDragging(true);
+        console.log("mouse down")
+        setIsMouseDown(true);
+        setHasMoved(false);
         setDragStart({ x: e.clientX, y: e.clientY });
         setInitialOffset({ x: svgOffset.x, y: svgOffset.y });
-        container.style.cursor = "grabbing";
-
-        // Prevent any other functionality when starting to drag
-        setIsZooming(false);
-
-        // If D3 zoom is active, switch to manual control but preserve zoom level
-        if (d3ZoomActive) {
-          console.log(
-            "Starting drag with D3 zoom active - switching to manual control"
-          );
-          setD3ZoomActive(false);
-
-          // Don't change the offset when switching to manual control during drag
-          // The user will reposition the view by dragging, so we don't need to calculate
-          // a new offset that might cause jumping
-          console.log(
-            "Switched to manual control - offset will be handled by drag"
-          );
-        }
 
         // Prevent text selection and other default behaviors
         e.preventDefault();
@@ -608,72 +594,74 @@ const BubbleChart = () => {
     };
 
     const handleMouseMove = (e) => {
+      if (isMouseDown && !isDragging) {
+        // Check if mouse has moved enough to start dragging
+        const deltaX = e.clientX - dragStart.x;
+        const deltaY = e.clientY - dragStart.y;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        // Drag threshold: start dragging if mouse moved more than 5 pixels
+        if (distance > 5) {
+          console.log("Starting drag - threshold exceeded");
+          setIsDragging(true);
+          setHasMoved(true);
+          container.style.cursor = "grabbing";
+        }
+      }
+
       if (isDragging) {
         // When dragging, ONLY handle drag movement - nothing else
         const deltaX = e.clientX - dragStart.x;
         const deltaY = e.clientY - dragStart.y;
-
-        // Don't clear the focus branch during dragging - it can cause position resets
-        // The focus branch should persist until explicitly changed by user interaction
 
         // Update offset for drag movement - use initial offset + delta
         const newOffset = {
           x: initialOffset.x + deltaX,
           y: initialOffset.y + deltaY,
         };
-
-        // console.log('Dragging:', { deltaX, deltaY, newOffset, d3ZoomActive });
         setSvgOffset(newOffset);
 
         // Prevent any other mouse move behaviors while dragging
         return;
       }
 
-      // Only handle other mouse move behaviors when NOT dragging
-      // console.log('Mouse move (not dragging):', { target: e.target.tagName });
-
-      // Handle tooltip positioning here
-      if (!containerRef.current) return;
-
-      const containerRect = containerRef.current.getBoundingClientRect();
-      // Account for zoom and offset when calculating mouse position
-      const mouseX =
-        (e.clientX - containerRect.left - svgOffset.x - dimensions.width / 2) /
-        zoomLevel;
-      const mouseY =
-        (e.clientY - containerRect.top - svgOffset.y - dimensions.height / 2) /
-        zoomLevel;
-      setMousePosition({ x: mouseX, y: mouseY });
-
-      // REMOVED edge scrolling - it was causing unwanted movement
-      // Edge scrolling will be re-implemented only when explicitly dragging
-
-      // Update tooltip position
+      // Handle tooltip positioning when not dragging
       if (tooltipRef.current && hoveredSat) {
         tooltipRef.current.style.left = `${e.clientX + 15}px`;
         tooltipRef.current.style.top = `${e.clientY + 15}px`;
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e) => {
       if (isDragging) {
-        // console.log('Ending drag');
+        // Ending a drag
+        console.log('Ending drag');
         setIsDragging(false);
         setJustFinishedDragging(true);
+        justFinishedDraggingRef.current = true; // Set ref immediately
         container.style.cursor = "default";
 
         // Clear the flag after a short delay to prevent accidental clicks
         setTimeout(() => {
           setJustFinishedDragging(false);
-        }, 150); // 150ms delay should be enough to prevent accidental clicks
+          justFinishedDraggingRef.current = false; // Clear ref as well
+        }, 300); // 300ms delay should be enough to prevent accidental clicks
+      } else if (isMouseDown && !hasMoved) {
+        // This was a click (mouse down without movement)
+        console.log('Click detected');
+        // Don't set justFinishedDragging for clicks - they should work normally
       }
+      
+      // Reset mouse tracking states
+      setIsMouseDown(false);
+      setHasMoved(false);
     };
 
     const handleMouseLeave = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        container.style.cursor = "default";
-      }
+      // if (isDragging) {
+      //   setIsDragging(false);
+      //   container.style.cursor = "default";
+      // }
     };
 
     const handleDoubleClick = (e) => {
@@ -683,14 +671,14 @@ const BubbleChart = () => {
         setSvgOffset({ x: 0, y: 0 });
         setZoomLevel(1);
         setFocusBranch(null);
-        setD3ZoomActive(false);
+        // setD3ZoomActive(false);
 
         // Force a chart rebuild to reset zoom state
         if (renderTimeoutRef.current) {
           clearTimeout(renderTimeoutRef.current);
         }
         renderTimeoutRef.current = setTimeout(() => {
-          debouncedRenderChart();
+          renderChart();
         }, 50);
       }
     };
@@ -699,17 +687,19 @@ const BubbleChart = () => {
     container.addEventListener("mousemove", handleMouseMove);
     container.addEventListener("mouseup", handleMouseUp);
     container.addEventListener("mouseleave", handleMouseLeave);
-    container.addEventListener("dblclick", handleDoubleClick);
+    // container.addEventListener("dblclick", handleDoubleClick);
 
     return () => {
       container.removeEventListener("mousedown", handleMouseDown);
       container.removeEventListener("mousemove", handleMouseMove);
       container.removeEventListener("mouseup", handleMouseUp);
       container.removeEventListener("mouseleave", handleMouseLeave);
-      container.removeEventListener("dblclick", handleDoubleClick);
+      // container.removeEventListener("dblclick", handleDoubleClick);
     };
   }, [
     isDragging,
+    isMouseDown,
+    hasMoved,
     dragStart,
     initialOffset,
     focusBranch,
@@ -855,75 +845,16 @@ const BubbleChart = () => {
     [timeLeft, currentTarget]
   );
 
-  // Canvas-based rendering for very large datasets
-  const renderCanvas = useCallback(() => {
-    if (!canvasRef.current || !filteredData.length) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const { width, height } = dimensions;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
-
-    // Apply zoom and pan transformations
-    ctx.save();
-    ctx.scale(zoomLevel, zoomLevel);
-    ctx.translate(
-      (width / 2 + svgOffset.x) / zoomLevel,
-      (height / 2 + svgOffset.y) / zoomLevel
-    );
-
-    // Simple bubble rendering for performance
-    ctx.fillStyle = "#bf574f";
-    ctx.globalAlpha = 0.7;
-
-    filteredData.forEach((item) => {
-      // Simple positioning - you can make this more sophisticated
-      const x = ((item.year - 1957) / (2024 - 1957)) * width - width / 2;
-      const y = Math.random() * height - height / 2;
-      const radius = 3;
-
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, 2 * Math.PI);
-      ctx.fill();
-    });
-
-    ctx.restore();
-    ctx.globalAlpha = 1.0;
-  }, [filteredData, dimensions, svgOffset, zoomLevel]);
-
-  // Debounced chart rendering to prevent excessive updates
-  const debouncedRenderChart = useCallback(
-    debounce(() => {
-      if (isRendering) return;
-      setIsRendering(true);
-
-      // Use requestAnimationFrame for smooth rendering
-      requestAnimationFrame(() => {
-        if (useCanvas) {
-          renderCanvas();
-        } else {
-          renderChart();
-        }
-        setIsRendering(false);
-      });
-    }, 100),
-    [useCanvas, renderCanvas]
-  );
 
   // Separate chart rendering logic - optimized for large datasets
   const renderChart = useCallback(() => {
     console.log("renderChart called, d3ZoomActive:", d3ZoomActive);
 
     // Don't render if D3 zoom is active - this prevents resetting D3 zoom state
-    if (d3ZoomActive) {
-      console.log("Skipping chart render - D3 zoom is active");
-      return;
-    }
+    // if (d3ZoomActive) {
+    //   console.log("Skipping chart render - D3 zoom is active");
+    //   return;
+    // }
 
     if (
       !hierarchyData ||
@@ -1012,12 +943,13 @@ const BubbleChart = () => {
       })
       .on("click", (event, d) => {
         // Prevent zooming if we just finished dragging
-        if (justFinishedDragging) {
+        if (justFinishedDraggingRef.current) {
           event.stopPropagation();
           return;
         }
 
-        if (focus !== d && d.children) {
+        if (focus !== d && d.children && !isDragging && !justFinishedDraggingRef.current) {
+          console.log("FUCKER3")
           zoom(event, d);
           event.stopPropagation();
         } else if (!d.children && gameActive) {
@@ -1040,16 +972,19 @@ const BubbleChart = () => {
       .join("text")
       .text((d) => d.data.name);
 
-    svg.on("click", (event) => {
-      // Only zoom out if clicking on the background (not on bubbles or labels)
-      // AND not when we're about to start dragging
-      // AND not when we just finished dragging
-      if (event.target === svg.node() && !isDragging && !justFinishedDragging) {
-        // Don't reset manual zoom state - let D3 handle the zoom out
-        zoom(event, packedRoot);
-        setFocusBranch(null); // Clear focus when zooming out
-      }
-    });
+    // svg.on("click", (event) => {
+    //   console.log("click")
+    //   console.log("isDragging", isDragging)
+    //   console.log("justFinishedDragging", justFinishedDragging)
+    //   // Only zoom out if clicking on the background (not on bubbles or labels)
+    //   // AND not when we're about to start dragging
+    //   // AND not when we just finished dragging
+    //   if (event.target === svg.node() && !isDragging && !justFinishedDragging) {
+    //     // Don't reset manual zoom state - let D3 handle the zoom out
+    //     zoom(event, packedRoot);
+    //     setFocusBranch(null); // Clear focus when zooming out
+    //   }
+    // });
 
     //console.log("focus", focus);
     //console.log("zoom args", [focus.x, focus.y, focus.r * 2]);
@@ -1085,9 +1020,11 @@ const BubbleChart = () => {
     }
 
     function zoom(event, d) {
+      if (isDragging || justFinishedDraggingRef.current) {
+        return;
+      }
       // setIsZooming(true);
       setD3ZoomActive(true); // D3 zoom is now active
-      console.log("d3ZoomActive", d3ZoomActive);
       // Set focus branch to prevent offset interference
       setFocusBranch(d);
 
@@ -1187,7 +1124,7 @@ const BubbleChart = () => {
     }
 
     renderTimeoutRef.current = setTimeout(() => {
-      debouncedRenderChart();
+      renderChart();
     }, 50);
 
     return () => {
@@ -1199,7 +1136,7 @@ const BubbleChart = () => {
     hierarchyData,
     focusBranch,
     dimensions,
-    debouncedRenderChart,
+    renderChart,
     d3ZoomActive,
   ]);
 
@@ -1228,15 +1165,56 @@ const BubbleChart = () => {
         );
       }
     }
-  }, [svgOffset, zoomLevel, dimensions, useCanvas, d3ZoomActive]);
+  }, [svgOffset, zoomLevel, dimensions, d3ZoomActive]);
 
-  // Handle canvas re-rendering when zoom or offset changes
-  useEffect(() => {
-    if (useCanvas && !d3ZoomActive) {
-      renderCanvas();
-    }
-    // If D3 zoom is active, don't let canvas re-rendering interfere
-  }, [useCanvas, svgOffset, zoomLevel, renderCanvas, d3ZoomActive]);
+  // Canvas-based rendering for very large datasets
+  // const renderCanvas = useCallback(() => {
+  //   if (!canvasRef.current || !filteredData.length) return;
+
+  //   const canvas = canvasRef.current;
+  //   const ctx = canvas.getContext("2d");
+  //   const { width, height } = dimensions;
+
+  //   canvas.width = width;
+  //   canvas.height = height;
+
+  //   // Clear canvas
+  //   ctx.clearRect(0, 0, width, height);
+
+  //   // Apply zoom and pan transformations
+  //   ctx.save();
+  //   ctx.scale(zoomLevel, zoomLevel);
+  //   ctx.translate(
+  //     (width / 2 + svgOffset.x) / zoomLevel,
+  //     (height / 2 + svgOffset.y) / zoomLevel
+  //   );
+
+  //   // Simple bubble rendering for performance
+  //   ctx.fillStyle = "#bf574f";
+  //   ctx.globalAlpha = 0.7;
+
+  //   filteredData.forEach((item) => {
+  //     // Simple positioning - you can make this more sophisticated
+  //     const x = ((item.year - 1957) / (2024 - 1957)) * width - width / 2;
+  //     const y = Math.random() * height - height / 2;
+  //     const radius = 3;
+
+  //     ctx.beginPath();
+  //     ctx.arc(x, y, radius, 0, 2 * Math.PI);
+  //     ctx.fill();
+  //   });
+
+  //   ctx.restore();
+  //   ctx.globalAlpha = 1.0;
+  // }, [filteredData, dimensions, svgOffset, zoomLevel]);
+
+  // // Handle canvas re-rendering when zoom or offset changes
+  // useEffect(() => {
+  //   if (useCanvas && !d3ZoomActive) {
+  //     renderCanvas();
+  //   }
+  //   // If D3 zoom is active, don't let canvas re-rendering interfere
+  // }, [useCanvas, svgOffset, zoomLevel, renderCanvas, d3ZoomActive]);
 
   // Auto-switch to canvas for very large datasets
   useEffect(() => {
