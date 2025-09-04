@@ -381,7 +381,7 @@ const About = () => {
                 sustainability and show how design can help solve real-world
                 problems.
               </p>
-              <Link className="buttons" to="/context">
+              <Link className="buttons" to="/timeline">
                 View Project
               </Link>
             </TextFrame>
