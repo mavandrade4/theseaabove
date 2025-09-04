@@ -361,15 +361,10 @@ const BubbleChart = () => {
   const [isZooming, setIsZooming] = useState(false);
   const [justFinishedDragging, setJustFinishedDragging] = useState(false);
   const justFinishedDraggingRef = useRef(false);
+  const isFocusingBubbleRef = useRef(false);
 
-  // Track if D3 zoom is currently active
-  const [d3ZoomActive, setD3ZoomActive] = useState(false);
+  // No longer using D3 zoom - using simple manual repositioning instead
 
-  // Track D3 zoom state to prevent loss during re-renders
-  const [d3ZoomState, setD3ZoomState] = useState(null);
-
-  // Track if we're in the middle of switching from D3 to manual control
-  const [switchingToManual, setSwitchingToManual] = useState(false);
 
   // Apply filters without data reduction - show ALL filtered data
   const filteredData = useMemo(() => {
@@ -471,63 +466,10 @@ const BubbleChart = () => {
     const container = containerRef.current;
     if (!container) return;
     const handleWheel = (e) => {
+      console.log("Wheel event detected", e.deltaY);
       e.preventDefault();
 
-      // If D3 zoom is active, switch to manual control
-      if (d3ZoomActive) {
-        console.log(
-          "Starting wheel zoom with D3 zoom active - switching to manual control"
-        );
-        setD3ZoomActive(false);
-        setSwitchingToManual(true);
-
-        // Calculate the current offset based on where D3 positioned everything
-        // We need to preserve the current view position when switching to manual control
-        if (focusBranch) {
-          // D3 zoom has positioned the focusBranch at the center of the viewport
-          // In our manual system, we want the bubble to stay exactly where it is
-          // The bubble is currently at (width/2, height/2) in screen coordinates
-          // We need to calculate what offset keeps it there
-
-          // The bubble's position in the packed layout
-          const bubbleCenterX = focusBranch.x;
-          const bubbleCenterY = focusBranch.y;
-
-          // To keep the bubble centered, we need:
-          // The bubble is currently at (bubbleCenterX, bubbleCenterY) in the packed layout
-          // We want it to stay at (width/2, height/2) in screen coordinates
-          // Since the packed layout is already centered, we just need to offset by the bubble's position
-
-          // The correct calculation is:
-          // offset.x = width/2 - bubbleCenterX
-          // offset.y = height/2 - bubbleCenterY
-
-          const targetOffsetX = dimensions.width / 2 - bubbleCenterX;
-          const targetOffsetY = dimensions.height / 2 - bubbleCenterY;
-
-          setSvgOffset({ x: targetOffsetX, y: targetOffsetY });
-          console.log("Switched to manual control with preserved position:", {
-            targetOffsetX,
-            targetOffsetY,
-            zoomLevel,
-            bubbleCenterX,
-            bubbleCenterY,
-            width: dimensions.width,
-            height: dimensions.height,
-          });
-
-          // Return early to prevent immediate zoom calculation
-          // The user needs to scroll again to actually zoom
-          return;
-        }
-      }
-
-      // If we're switching to manual control, don't apply zoom yet
-      if (switchingToManual) {
-        console.log("Switching to manual control - skipping zoom calculation");
-        setSwitchingToManual(false);
-        return;
-      }
+      // No D3 zoom to worry about - just do normal wheel zoom
 
       // Get mouse position relative to container
       const containerRect = container.getBoundingClientRect();
@@ -537,6 +479,15 @@ const BubbleChart = () => {
       // Calculate zoom factor
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
       const newZoom = Math.max(0.1, Math.min(5, zoomLevel * zoomFactor));
+
+      console.log("Zoom calculation:", {
+        deltaY: e.deltaY,
+        zoomFactor,
+        currentZoom: zoomLevel,
+        newZoom,
+        mouseX,
+        mouseY
+      });
 
       // Calculate the center of the viewport
       const centerX = dimensions.width / 2;
@@ -549,6 +500,13 @@ const BubbleChart = () => {
       // Calculate new offset to keep the mouse over the same data point
       const newOffsetX = mouseX - centerX - dataX * newZoom;
       const newOffsetY = mouseY - centerY - dataY * newZoom;
+
+      console.log("Updating zoom and offset:", {
+        newZoom,
+        newOffsetX,
+        newOffsetY,
+        svgOffset
+      });
 
       // Update both zoom and offset
       setZoomLevel(newZoom);
@@ -564,9 +522,7 @@ const BubbleChart = () => {
     zoomLevel,
     svgOffset,
     dimensions,
-    // d3ZoomActive,
     focusBranch,
-    switchingToManual,
   ]);
 
   // Separate useEffect for drag event listeners to avoid conflicts
@@ -706,7 +662,6 @@ const BubbleChart = () => {
     isZooming,
     hoveredSat,
     justFinishedDragging,
-    d3ZoomActive,
     dimensions,
   ]);
 
@@ -848,13 +803,9 @@ const BubbleChart = () => {
 
   // Separate chart rendering logic - optimized for large datasets
   const renderChart = useCallback(() => {
-    console.log("renderChart called, d3ZoomActive:", d3ZoomActive);
+    console.log("renderChart called");
 
-    // Don't render if D3 zoom is active - this prevents resetting D3 zoom state
-    // if (d3ZoomActive) {
-    //   console.log("Skipping chart render - D3 zoom is active");
-    //   return;
-    // }
+    // Always render - no D3 zoom to interfere
 
     if (
       !hierarchyData ||
@@ -903,18 +854,6 @@ const BubbleChart = () => {
     let focus = packedRoot;
     let view;
 
-    // If D3 zoom is active, restore the previous state
-    if (d3ZoomActive && d3ZoomState) {
-      focus = d3ZoomState.focus;
-      view = d3ZoomState.view;
-      // Don't restore zoom level - let manual control handle it
-      // setZoomLevel(d3ZoomState.zoomLevel);
-    } else if (d3ZoomActive && focusBranch) {
-      focus = focusBranch;
-      // Calculate the view based on the focus branch
-      view = [focus.x, focus.y, focus.r * 2];
-    }
-
     // Render all nodes - no filtering for data visibility
     const allNodes = packedRoot.descendants().slice(1);
     // console.log('Total nodes to render:', allNodes.length);
@@ -949,8 +888,8 @@ const BubbleChart = () => {
         }
 
         if (focus !== d && d.children && !isDragging && !justFinishedDraggingRef.current) {
-          console.log("FUCKER3")
-          zoom(event, d);
+          console.log("Focusing on bubble:", d.data.name);
+          focusBubble(d);
           event.stopPropagation();
         } else if (!d.children && gameActive) {
           checkSelection(d.data);
@@ -989,11 +928,8 @@ const BubbleChart = () => {
     //console.log("focus", focus);
     //console.log("zoom args", [focus.x, focus.y, focus.r * 2]);
 
-    // Only call zoomTo if D3 zoom is not active
-    // This prevents resetting the view when D3 zoom has positioned everything
-    if (!d3ZoomActive) {
-      zoomTo([focus.x, focus.y, focus.r * 2]);
-    }
+    // Always call zoomTo to set the initial view
+    zoomTo([focus.x, focus.y, focus.r * 2]);
 
     function zoomTo(v) {
       if (width === 0 || height === 0) return;
@@ -1019,87 +955,59 @@ const BubbleChart = () => {
       );
     }
 
-    function zoom(event, d) {
+    function focusBubble(d) {
       if (isDragging || justFinishedDraggingRef.current) {
         return;
       }
-      // setIsZooming(true);
-      setD3ZoomActive(true); // D3 zoom is now active
-      // Set focus branch to prevent offset interference
-      setFocusBranch(d);
-
-      const transition = svg
-        .transition()
-        .duration(500) // Reduced from 750ms
-        .tween("zoom", () => {
-          // Reset D3 zoom state to match our current manual transform
-          // This ensures D3 zoom starts from the right position
-          if (
-            !d3ZoomActive &&
-            (zoomLevel !== 1 || svgOffset.x !== 0 || svgOffset.y !== 0)
-          ) {
-            // Calculate what the current view should be based on manual transform
-            const centerX = dimensions.width / 2;
-            const centerY = dimensions.height / 2;
-            const scale = zoomLevel;
-            const offsetX = svgOffset.x;
-            const offsetY = svgOffset.y;
-
-            // Update the D3 view state to match our manual transform
-            view = [
-              centerX - offsetX / scale,
-              centerY - offsetY / scale,
-              dimensions.width / scale,
-            ];
-          }
-
-          // Now zoom to the bubble's position
-          const targetView = [d.x, d.y, d.r * 2];
-
-          const i = d3.interpolateZoom(view, targetView);
-          return (t) => zoomTo(i(t));
-        });
-
-      labelSelection.current
-        .filter((n) => n.parent === d && n.children)
-        .transition(transition)
-        .style("fill-opacity", 1)
-        .on("start", function () {
-          this.style.display = "inline";
-        });
-
-      labelSelection.current
-        .filter((n) => n.parent !== d || !n.children)
-        .transition(transition)
-        .style("fill-opacity", 0)
-        .on("end", function () {
-          this.style.display = "none";
-        });
-
-      // Mark zoom as complete when transition ends
-      transition.on("end", () => {
-        setIsZooming(false);
-
-        // Save the D3 zoom state to prevent loss during re-renders
-        // Don't update zoom level here - let manual control handle it
-        const finalView = [d.x, d.y, d.r * 2];
-        setD3ZoomState({
-          view: finalView,
-          focus: d,
-          zoomLevel: zoomLevel, // Keep the current zoom level
-        });
-
-        // Keep D3 zoom active - don't switch to manual control
-        // The user must explicitly use wheel or drag to take manual control
-        // This prevents the two systems from fighting each other
-
-        // Don't change svgOffset - let D3 keep its positioning
-        // setD3ZoomActive(false); // Keep D3 zoom active
+      
+      console.log("Focusing bubble at position:", d.x, d.y, "radius:", d.r);
+      
+      // Use screen dimensions to calculate optimal zoom and positioning
+      const screenWidth = dimensions.width;
+      const screenHeight = dimensions.height;
+      
+      // Calculate optimal zoom level based on bubble size and screen size
+      // We want the bubble to take up about 1/3 of the screen (not too big, not too small)
+      const targetBubbleScreenSize = Math.min(screenWidth, screenHeight) / 3;
+      const optimalZoom = targetBubbleScreenSize / (d.r * 2); // d.r is radius, so diameter is d.r * 2
+      
+      // Clamp zoom level to reasonable bounds
+      const clampedZoom = Math.max(0.5, Math.min(5, optimalZoom));
+      
+      // Calculate the target diameter for the zoomTo function
+      // The zoomTo function uses: k = width / v[2], so v[2] should be the target diameter
+      // We want the bubble to be targetBubbleScreenSize, so: k = targetBubbleScreenSize / (d.r * 2)
+      // And: k = width / v[2], so: v[2] = width / k = width / (targetBubbleScreenSize / (d.r * 2))
+      const targetDiameter = (screenWidth * d.r * 2) / targetBubbleScreenSize;
+      
+      console.log("Smart bubble focusing:", {
+        bubble: { x: d.x, y: d.y, r: d.r, diameter: d.r * 2 },
+        screen: { width: screenWidth, height: screenHeight },
+        targetBubbleScreenSize,
+        optimalZoom,
+        clampedZoom,
+        targetDiameter
       });
-
-      // Update the focus branch state to persist across re-renders
+      
+      // Set flag to prevent manual transform interference
+      isFocusingBubbleRef.current = true;
+      
+      // Reset the manual transform state to prevent interference
+      setZoomLevel(1);
+      setSvgOffset({ x: 0, y: 0 });
+      
+      // Use the zoomTo function to center and zoom to the bubble
+      // This will center the bubble at (d.x, d.y) with the target diameter
+      zoomTo([d.x, d.y, targetDiameter]);
+      
+      // Update the focus branch
       setFocusBranch(d);
-      focus = d;
+      
+      // Clear the flag after a short delay to allow zoomTo to complete
+      setTimeout(() => {
+        isFocusingBubbleRef.current = false;
+        console.log('Bubble focusing complete - manual transform re-enabled');
+      }, 100);
     }
   }, [
     hierarchyData,
@@ -1117,9 +1025,9 @@ const BubbleChart = () => {
       clearTimeout(renderTimeoutRef.current);
     }
 
-    // Don't re-render the chart if D3 zoom is active
-    // This prevents resetting the D3 zoom positioning
-    if (d3ZoomActive) {
+    // Don't render if we're currently focusing a bubble
+    if (isFocusingBubbleRef.current) {
+      console.log('Skipping renderChart - focusing bubble');
       return;
     }
 
@@ -1137,7 +1045,6 @@ const BubbleChart = () => {
     focusBranch,
     dimensions,
     renderChart,
-    d3ZoomActive,
   ]);
 
   // Handle offset and zoom updates without rebuilding the chart
@@ -1147,25 +1054,17 @@ const BubbleChart = () => {
     const svg = d3.select(svgRef.current);
     const g = svg.select("g");
 
-    if (g.size() > 0) {
-      // Only apply manual transform if D3 zoom is not active
-      // This ensures the two systems don't fight each other
-      if (!d3ZoomActive) {
-        const transform = `scale(${zoomLevel}) translate(${
-          (dimensions.width / 2 + svgOffset.x) / zoomLevel
-        },${(dimensions.height / 2 + svgOffset.y) / zoomLevel})`;
-        // console.log('Manual transform update:', { zoomLevel, svgOffset, transform });
-        g.attr("transform", transform);
-      } else {
-        // If D3 zoom is active, DON'T change the transform at all
-        // Let D3 zoom handle all positioning
-        // Also, don't let any manual state changes interfere
-        console.log(
-          "D3 zoom active - preventing manual transform interference"
-        );
-      }
+    if (g.size() > 0 && !isFocusingBubbleRef.current) {
+      // Apply manual transform only when not focusing a bubble
+      const transform = `scale(${zoomLevel}) translate(${
+        (dimensions.width / 2 + svgOffset.x) / zoomLevel
+      },${(dimensions.height / 2 + svgOffset.y) / zoomLevel})`;
+      console.log('Manual transform update:', { zoomLevel, svgOffset, transform });
+      g.attr("transform", transform);
+    } else if (isFocusingBubbleRef.current) {
+      console.log('Skipping manual transform - focusing bubble');
     }
-  }, [svgOffset, zoomLevel, dimensions, d3ZoomActive]);
+  }, [svgOffset, zoomLevel, dimensions]);
 
   // Canvas-based rendering for very large datasets
   // const renderCanvas = useCallback(() => {
@@ -1247,12 +1146,10 @@ const BubbleChart = () => {
     setFocusBranch(null);
     setHoveredSat(null);
 
-    // Only reset manual zoom state if D3 zoom is not active
-    if (!d3ZoomActive) {
-      setSvgOffset({ x: 0, y: 0 });
-      setZoomLevel(1);
-    }
-  }, [d3ZoomActive]);
+    // Reset manual zoom state
+    setSvgOffset({ x: 0, y: 0 });
+    setZoomLevel(1);
+  }, []);
 
   const StartMessage = useMemo(
     () =>
