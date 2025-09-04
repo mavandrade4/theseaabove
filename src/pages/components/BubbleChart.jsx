@@ -478,7 +478,7 @@ const BubbleChart = () => {
 
       // Calculate zoom factor
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(0.1, zoomLevel * zoomFactor);
+      const newZoom = Math.max(0.1, Math.min(15, zoomLevel * zoomFactor));
 
       console.log("Zoom calculation:", {
         deltaY: e.deltaY,
@@ -568,7 +568,9 @@ const BubbleChart = () => {
           console.log("Starting drag - threshold exceeded", { 
             currentSvgOffset: svgOffset, 
             initialOffsetRef: initialOffsetRef.current,
-            distance 
+            distance,
+            currentZoomLevel: zoomLevel,
+            isBubbleTransitioning: isBubbleTransitioningRef.current
           });
           
           // Ensure initialOffsetRef is exactly current before starting drag
@@ -587,17 +589,17 @@ const BubbleChart = () => {
         const deltaY = e.clientY - dragStart.y;
 
         // Update offset for drag movement - use initial offset + delta
-        // Use ref to get immediate value and avoid race conditions
         let newOffsetX = initialOffsetRef.current.x + deltaX;
         let newOffsetY = initialOffsetRef.current.y + deltaY;
         
         // Add bounds checking to prevent chart from going too far off-screen
-        const maxOffset = Math.max(dimensions.width, dimensions.height) * 2; // Allow 2x screen size movement
+        const maxOffset = Math.max(dimensions.width, dimensions.height) * 10; // Much larger bounds
         newOffsetX = Math.max(-maxOffset, Math.min(maxOffset, newOffsetX));
         newOffsetY = Math.max(-maxOffset, Math.min(maxOffset, newOffsetY));
         
         console.log('Drag update:', { 
-          delta: { x: deltaX, y: deltaY }, 
+          delta: { x: deltaX, y: deltaY },
+          zoomLevel,
           initial: initialOffsetRef.current, 
           new: { x: newOffsetX, y: newOffsetY },
           bounds: { max: maxOffset, min: -maxOffset }
@@ -853,9 +855,8 @@ const BubbleChart = () => {
       return;
     }
 
-    const data = focusBranch
-      ? focusBranch.leaves().map((d) => d.data)
-      : filteredData;
+    // Always use the full filtered data - focusBranch is just for visual positioning
+    const data = filteredData;
 
     const root = d3
       .hierarchy(hierarchyData)
@@ -882,14 +883,14 @@ const BubbleChart = () => {
     
     const translateX = safeOffsetX / safeZoomLevel;
     const translateY = safeOffsetY / safeZoomLevel;
-    
+
     const g = svg
       .append("g")
       .attr(
         "transform",
         `scale(${safeZoomLevel}) translate(${translateX},${translateY})`
       );
-    let focus = packedRoot;
+    let focus = focusBranch || packedRoot;
     let view;
 
     // Render all nodes - no filtering for data visibility
@@ -970,10 +971,10 @@ const BubbleChart = () => {
 
     // Set initial positions and sizes for circles and labels
     // No transforms needed - the main g element transform handles all positioning
-    const nodes = nodeSelection.current;
-    const labels = labelSelection.current;
+      const nodes = nodeSelection.current;
+      const labels = labelSelection.current;
 
-    nodes
+      nodes
       .attr("cx", (d) => d.x)
       .attr("cy", (d) => d.y)
       .attr("r", (d) => d.r);
@@ -1020,7 +1021,10 @@ const BubbleChart = () => {
       
       // Calculate the zoom level to make the bubble the target size on screen
       // targetBubbleScreenSize = d.r * 2 * zoomLevel (bubble diameter * zoom = screen size)
-      const newZoomLevel = targetBubbleScreenSize / (d.r * 2);
+      const calculatedZoom = targetBubbleScreenSize / (d.r * 2);
+      
+      // Limit maximum zoom to prevent extreme offset values that cause precision issues
+      const newZoomLevel = Math.min(calculatedZoom, 15); // Cap at 15x zoom
       
       // Calculate the offset to center the bubble on screen
       // We want the bubble at (d.x, d.y) to appear at screen center after transform
@@ -1058,6 +1062,11 @@ const BubbleChart = () => {
         // Set flag to indicate bubble transition is running
         isBubbleTransitioningRef.current = true;
         
+        // Update state immediately to keep zoom level in sync
+        setZoomLevel(newZoomLevel);
+        setSvgOffset({ x: newOffsetX, y: newOffsetY });
+        initialOffsetRef.current = { x: newOffsetX, y: newOffsetY };
+        
         // Apply smooth transition directly
         g.transition()
           .duration(800)
@@ -1065,13 +1074,9 @@ const BubbleChart = () => {
           .attr("transform", transform)
           .on("end", () => {
             console.log("Bubble focus transition complete");
-            // Update state only after transition completes
-            setZoomLevel(newZoomLevel);
-            setSvgOffset({ x: newOffsetX, y: newOffsetY });
-            initialOffsetRef.current = { x: newOffsetX, y: newOffsetY };
             isBubbleTransitioningRef.current = false;
             // Update focus branch after transition completes
-            setFocusBranch(d);
+      setFocusBranch(d);
           });
       } else {
         // Fallback if no SVG element found
@@ -1131,8 +1136,9 @@ const BubbleChart = () => {
       const safeOffsetX = isFinite(svgOffset.x) ? svgOffset.x : 0;
       const safeOffsetY = isFinite(svgOffset.y) ? svgOffset.y : 0;
       
-      const translateX = safeOffsetX / safeZoomLevel;
-      const translateY = safeOffsetY / safeZoomLevel;
+      // Use more precise calculation for high zoom levels
+      const translateX = Math.round((safeOffsetX / safeZoomLevel) * 1000) / 1000;
+      const translateY = Math.round((safeOffsetY / safeZoomLevel) * 1000) / 1000;
       
       // Check if translate values are valid
       if (!isFinite(translateX) || !isFinite(translateY)) {
@@ -1171,6 +1177,11 @@ const BubbleChart = () => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     // Debounced update for performance
     debouncedFilterChange(key, value);
+    
+    // Reset chart view when filter changes
+    setFocusBranch(null);
+    setSvgOffset({ x: 0, y: 0 });
+    setZoomLevel(1);
   };
 
   const resetFilters = useCallback(() => {
@@ -1179,8 +1190,8 @@ const BubbleChart = () => {
     setHoveredSat(null);
 
     // Reset manual zoom state
-    setSvgOffset({ x: 0, y: 0 });
-    setZoomLevel(1);
+      setSvgOffset({ x: 0, y: 0 });
+      setZoomLevel(1);
   }, []);
 
   const StartMessage = useMemo(
@@ -1510,7 +1521,7 @@ const BubbleChart = () => {
           </div>
         )} */}
 
-        <svg
+          <svg
             ref={svgRef}
             className="groups-svg"
             width="100%"
