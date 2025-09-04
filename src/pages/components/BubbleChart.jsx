@@ -356,12 +356,13 @@ const BubbleChart = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialOffset, setInitialOffset] = useState({ x: 0, y: 0 });
+  const initialOffsetRef = useRef({ x: 0, y: 0 });
+
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [hasMoved, setHasMoved] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
   const [justFinishedDragging, setJustFinishedDragging] = useState(false);
   const justFinishedDraggingRef = useRef(false);
-  const isFocusingBubbleRef = useRef(false);
 
   // No longer using D3 zoom - using simple manual repositioning instead
 
@@ -478,7 +479,7 @@ const BubbleChart = () => {
 
       // Calculate zoom factor
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(0.1, Math.min(5, zoomLevel * zoomFactor));
+      const newZoom = Math.max(0.1, Math.min(10, zoomLevel * zoomFactor));
 
       console.log("Zoom calculation:", {
         deltaY: e.deltaY,
@@ -511,6 +512,9 @@ const BubbleChart = () => {
       // Update both zoom and offset
       setZoomLevel(newZoom);
       setSvgOffset({ x: newOffsetX, y: newOffsetY });
+      
+      // Immediately update the ref to prevent drag jump
+      initialOffsetRef.current = { x: newOffsetX, y: newOffsetY };
     };
 
     container.addEventListener("wheel", handleWheel, { passive: false });
@@ -538,11 +542,15 @@ const BubbleChart = () => {
       );
 
       if (e.button === 0 && !isInteractiveElement) {
-        console.log("mouse down")
+        // Capture the EXACT current offset at mouse down - this is our drag starting point
+        const currentOffset = { x: svgOffset.x, y: svgOffset.y };
+        console.log("mouse down", { currentSvgOffset: currentOffset, mousePos: { x: e.clientX, y: e.clientY } });
+        
         setIsMouseDown(true);
         setHasMoved(false);
         setDragStart({ x: e.clientX, y: e.clientY });
-        setInitialOffset({ x: svgOffset.x, y: svgOffset.y });
+        setInitialOffset(currentOffset);
+        initialOffsetRef.current = currentOffset; // Use the captured value
 
         // Prevent text selection and other default behaviors
         e.preventDefault();
@@ -558,7 +566,16 @@ const BubbleChart = () => {
         
         // Drag threshold: start dragging if mouse moved more than 5 pixels
         if (distance > 5) {
-          console.log("Starting drag - threshold exceeded");
+          console.log("Starting drag - threshold exceeded", { 
+            currentSvgOffset: svgOffset, 
+            initialOffsetRef: initialOffsetRef.current,
+            distance 
+          });
+          
+          // Ensure initialOffsetRef is exactly current before starting drag
+          initialOffsetRef.current = { x: svgOffset.x, y: svgOffset.y };
+          console.log("Updated initialOffsetRef to current svgOffset:", initialOffsetRef.current);
+          
           setIsDragging(true);
           setHasMoved(true);
           container.style.cursor = "grabbing";
@@ -571,9 +588,25 @@ const BubbleChart = () => {
         const deltaY = e.clientY - dragStart.y;
 
         // Update offset for drag movement - use initial offset + delta
+        // Use ref to get immediate value and avoid race conditions
+        let newOffsetX = initialOffsetRef.current.x + deltaX;
+        let newOffsetY = initialOffsetRef.current.y + deltaY;
+        
+        // Add bounds checking to prevent chart from going too far off-screen
+        const maxOffset = Math.max(dimensions.width, dimensions.height) * 2; // Allow 2x screen size movement
+        newOffsetX = Math.max(-maxOffset, Math.min(maxOffset, newOffsetX));
+        newOffsetY = Math.max(-maxOffset, Math.min(maxOffset, newOffsetY));
+        
+        console.log('Drag update:', { 
+          delta: { x: deltaX, y: deltaY }, 
+          initial: initialOffsetRef.current, 
+          new: { x: newOffsetX, y: newOffsetY },
+          bounds: { max: maxOffset, min: -maxOffset }
+        });
+
         const newOffset = {
-          x: initialOffset.x + deltaX,
-          y: initialOffset.y + deltaY,
+          x: newOffsetX,
+          y: newOffsetY,
         };
         setSvgOffset(newOffset);
 
@@ -843,13 +876,19 @@ const BubbleChart = () => {
     const pack = d3.pack().size([width, height]).padding(3);
     const packedRoot = pack(root);
 
+    // Safety checks for renderChart transform
+    const safeZoomLevel = isFinite(zoomLevel) && zoomLevel > 0 ? zoomLevel : 1;
+    const safeOffsetX = isFinite(svgOffset.x) ? svgOffset.x : 0;
+    const safeOffsetY = isFinite(svgOffset.y) ? svgOffset.y : 0;
+    
+    const translateX = safeOffsetX / safeZoomLevel;
+    const translateY = safeOffsetY / safeZoomLevel;
+    
     const g = svg
       .append("g")
       .attr(
         "transform",
-        `scale(${zoomLevel}) translate(${
-          (width / 2 + svgOffset.x) / zoomLevel
-        },${(height / 2 + svgOffset.y) / zoomLevel})`
+        `scale(${safeZoomLevel}) translate(${translateX},${translateY})`
       );
     let focus = packedRoot;
     let view;
@@ -872,7 +911,9 @@ const BubbleChart = () => {
       .attr("pointer-events", (d) => (!d.children ? "auto" : null))
       .on("mouseover", function (event, d) {
         if (!d.children) {
-          d3.select(this).attr("stroke", "#f0f0f0").attr("stroke-width", 2);
+          // Scale stroke width with zoom level for consistent appearance
+          const scaledStrokeWidth = 2 / zoomLevel;
+          d3.select(this).attr("stroke", "#f0f0f0").attr("stroke-width", scaledStrokeWidth);
           setHoveredSat(d.data);
         }
       })
@@ -928,32 +969,19 @@ const BubbleChart = () => {
     //console.log("focus", focus);
     //console.log("zoom args", [focus.x, focus.y, focus.r * 2]);
 
-    // Always call zoomTo to set the initial view
-    zoomTo([focus.x, focus.y, focus.r * 2]);
+    // Set initial positions and sizes for circles and labels
+    // No transforms needed - the main g element transform handles all positioning
+    const nodes = nodeSelection.current;
+    const labels = labelSelection.current;
 
-    function zoomTo(v) {
-      if (width === 0 || height === 0) return;
-      //console.log("zoomTo input", v);
-      const k = width / v[2];
-      //console.log("k", k);
-      view = v;
+    nodes
+      .attr("cx", (d) => d.x)
+      .attr("cy", (d) => d.y)
+      .attr("r", (d) => d.r);
 
-      // Batch DOM updates for better performance
-      const nodes = nodeSelection.current;
-      const labels = labelSelection.current;
-
-      nodes
-        .attr(
-          "transform",
-          (d) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`
-        )
-        .attr("r", (d) => d.r * k);
-
-      labels.attr(
-        "transform",
-        (d) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`
-      );
-    }
+    labels
+      .attr("x", (d) => d.x)
+      .attr("y", (d) => d.y);
 
     function focusBubble(d) {
       if (isDragging || justFinishedDraggingRef.current) {
@@ -991,26 +1019,37 @@ const BubbleChart = () => {
         zoomToCall: `zoomTo([${d.x}, ${d.y}, ${targetDiameter}])`
       });
       
-      // Set flag to prevent manual transform interference
-      isFocusingBubbleRef.current = true;
+      // Calculate the zoom level to make the bubble the target size on screen
+      // targetBubbleScreenSize = d.r * 2 * zoomLevel (bubble diameter * zoom = screen size)
+      const newZoomLevel = targetBubbleScreenSize / (d.r * 2);
       
-      // Reset the manual transform state to prevent interference
-      setZoomLevel(1);
-      setSvgOffset({ x: 0, y: 0 });
+      // Calculate the offset to center the bubble on screen
+      // We want the bubble at (d.x, d.y) to appear at screen center after transform
+      // The transform is: scale(zoomLevel) translate(svgOffset.x / zoomLevel, svgOffset.y / zoomLevel)
+      // So the bubble will appear at: (d.x + svgOffset.x / zoomLevel) * zoomLevel = d.x * zoomLevel + svgOffset.x
+      // We want this to equal screenCenter, so: d.x * zoomLevel + svgOffset.x = screenWidth/2
+      // Solving: svgOffset.x = screenWidth/2 - d.x * zoomLevel
+      const newOffsetX = (screenWidth / 2) - (d.x * newZoomLevel);
+      const newOffsetY = (screenHeight / 2) - (d.y * newZoomLevel);
       
-      // Use the zoomTo function to center and zoom to the bubble
-      // This will center the bubble at (d.x, d.y) with the target diameter
-      // The zoomTo function centers the view at the first two coordinates
-      zoomTo([d.x, d.y, targetDiameter]);
+      console.log("Unified manual transform for bubble focusing:", {
+        bubble: { x: d.x, y: d.y, r: d.r, diameter: d.r * 2 },
+        screen: { width: screenWidth, height: screenHeight },
+        targetBubbleScreenSize,
+        newZoomLevel,
+        newOffset: { x: newOffsetX, y: newOffsetY },
+        finalTransform: `scale(${newZoomLevel}) translate(${(screenWidth/2 + newOffsetX) / newZoomLevel}, ${(screenHeight/2 + newOffsetY) / newZoomLevel})`
+      });
+      
+      // Apply the unified manual transform
+      setZoomLevel(newZoomLevel);
+      setSvgOffset({ x: newOffsetX, y: newOffsetY });
+      
+      // Immediately update the ref to prevent drag jump
+      initialOffsetRef.current = { x: newOffsetX, y: newOffsetY };
       
       // Update the focus branch
       setFocusBranch(d);
-      
-      // Clear the flag after a short delay to allow zoomTo to complete
-      setTimeout(() => {
-        isFocusingBubbleRef.current = false;
-        console.log('Bubble focusing complete - manual transform re-enabled');
-      }, 100);
     }
   }, [
     hierarchyData,
@@ -1026,12 +1065,6 @@ const BubbleChart = () => {
   useEffect(() => {
     if (renderTimeoutRef.current) {
       clearTimeout(renderTimeoutRef.current);
-    }
-
-    // Don't render if we're currently focusing a bubble
-    if (isFocusingBubbleRef.current) {
-      console.log('Skipping renderChart - focusing bubble');
-      return;
     }
 
     renderTimeoutRef.current = setTimeout(() => {
@@ -1057,15 +1090,33 @@ const BubbleChart = () => {
     const svg = d3.select(svgRef.current);
     const g = svg.select("g");
 
-    if (g.size() > 0 && !isFocusingBubbleRef.current) {
-      // Apply manual transform only when not focusing a bubble
-      const transform = `scale(${zoomLevel}) translate(${
-        (dimensions.width / 2 + svgOffset.x) / zoomLevel
-      },${(dimensions.height / 2 + svgOffset.y) / zoomLevel})`;
-      console.log('Manual transform update:', { zoomLevel, svgOffset, transform });
+    if (g.size() > 0) {
+      // Apply unified manual transform for all positioning
+      // The packed layout creates bubbles centered around (width/2, height/2)
+      // We only need to add the svgOffset for panning
+      
+      // Safety checks to prevent invalid transforms
+      const safeZoomLevel = isFinite(zoomLevel) && zoomLevel > 0 ? zoomLevel : 1;
+      const safeOffsetX = isFinite(svgOffset.x) ? svgOffset.x : 0;
+      const safeOffsetY = isFinite(svgOffset.y) ? svgOffset.y : 0;
+      
+      const translateX = safeOffsetX / safeZoomLevel;
+      const translateY = safeOffsetY / safeZoomLevel;
+      
+      // Check if translate values are valid
+      if (!isFinite(translateX) || !isFinite(translateY)) {
+        console.error('Invalid transform values:', { zoomLevel, svgOffset, translateX, translateY });
+        return;
+      }
+      
+      const transform = `scale(${safeZoomLevel}) translate(${translateX},${translateY})`;
+      console.log('Unified transform update:', { 
+        zoomLevel: safeZoomLevel, 
+        svgOffset: { x: safeOffsetX, y: safeOffsetY }, 
+        translate: { x: translateX, y: translateY },
+        transform 
+      });
       g.attr("transform", transform);
-    } else if (isFocusingBubbleRef.current) {
-      console.log('Skipping manual transform - focusing bubble');
     }
   }, [svgOffset, zoomLevel, dimensions]);
 
