@@ -328,7 +328,6 @@ const BubbleChart = () => {
   const nodeSelection = useRef();
   const labelSelection = useRef();
   const renderTimeoutRef = useRef();
-  const canvasRef = useRef();
 
   const [showStartMessage, setShowStartMessage] = useState(true);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -352,11 +351,11 @@ const BubbleChart = () => {
   const [newSvgOffset, setNewSvgOffset] = useState({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isRendering, setIsRendering] = useState(false);
-  const [useCanvas, setUseCanvas] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialOffset, setInitialOffset] = useState({ x: 0, y: 0 });
   const initialOffsetRef = useRef({ x: 0, y: 0 });
+  const isBubbleTransitioningRef = useRef(false);
 
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [hasMoved, setHasMoved] = useState(false);
@@ -479,7 +478,7 @@ const BubbleChart = () => {
 
       // Calculate zoom factor
       const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Math.max(0.1, Math.min(10, zoomLevel * zoomFactor));
+      const newZoom = Math.max(0.1, zoomLevel * zoomFactor);
 
       console.log("Zoom calculation:", {
         deltaY: e.deltaY,
@@ -1041,15 +1040,47 @@ const BubbleChart = () => {
         finalTransform: `scale(${newZoomLevel}) translate(${(screenWidth/2 + newOffsetX) / newZoomLevel}, ${(screenHeight/2 + newOffsetY) / newZoomLevel})`
       });
       
-      // Apply the unified manual transform
-      setZoomLevel(newZoomLevel);
-      setSvgOffset({ x: newOffsetX, y: newOffsetY });
+      // Apply smooth transition directly to the SVG
+      const svg = d3.select(svgRef.current);
+      const g = svg.select("g");
       
-      // Immediately update the ref to prevent drag jump
-      initialOffsetRef.current = { x: newOffsetX, y: newOffsetY };
-      
-      // Update the focus branch
-      setFocusBranch(d);
+      if (g.size() > 0) {
+        const safeZoomLevel = isFinite(newZoomLevel) && newZoomLevel > 0 ? newZoomLevel : 1;
+        const safeOffsetX = isFinite(newOffsetX) ? newOffsetX : 0;
+        const safeOffsetY = isFinite(newOffsetY) ? newOffsetY : 0;
+        
+        const translateX = safeOffsetX / safeZoomLevel;
+        const translateY = safeOffsetY / safeZoomLevel;
+        const transform = `scale(${safeZoomLevel}) translate(${translateX},${translateY})`;
+        
+        console.log("Applying smooth transition to bubble focus:", transform);
+        
+        // Set flag to indicate bubble transition is running
+        isBubbleTransitioningRef.current = true;
+        
+        // Apply smooth transition directly
+        g.transition()
+          .duration(800)
+          .ease(d3.easeCubicInOut)
+          .attr("transform", transform)
+          .on("end", () => {
+            console.log("Bubble focus transition complete");
+            // Update state only after transition completes
+            setZoomLevel(newZoomLevel);
+            setSvgOffset({ x: newOffsetX, y: newOffsetY });
+            initialOffsetRef.current = { x: newOffsetX, y: newOffsetY };
+            isBubbleTransitioningRef.current = false;
+            // Update focus branch after transition completes
+            setFocusBranch(d);
+          });
+      } else {
+        // Fallback if no SVG element found
+        setZoomLevel(newZoomLevel);
+        setSvgOffset({ x: newOffsetX, y: newOffsetY });
+        initialOffsetRef.current = { x: newOffsetX, y: newOffsetY };
+        // Update focus branch immediately for fallback
+        setFocusBranch(d);
+      }
     }
   }, [
     hierarchyData,
@@ -1085,7 +1116,7 @@ const BubbleChart = () => {
 
   // Handle offset and zoom updates without rebuilding the chart
   useEffect(() => {
-    if (!svgRef.current || useCanvas) return;
+    if (!svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
     const g = svg.select("g");
@@ -1116,69 +1147,16 @@ const BubbleChart = () => {
         translate: { x: translateX, y: translateY },
         transform 
       });
-      g.attr("transform", transform);
+      
+      // Only skip manual transform if bubble transition is running
+      if (isBubbleTransitioningRef.current) {
+        console.log("Skipping manual transform - bubble transition in progress");
+      } else {
+        g.attr("transform", transform);
+      }
     }
   }, [svgOffset, zoomLevel, dimensions]);
 
-  // Canvas-based rendering for very large datasets
-  // const renderCanvas = useCallback(() => {
-  //   if (!canvasRef.current || !filteredData.length) return;
-
-  //   const canvas = canvasRef.current;
-  //   const ctx = canvas.getContext("2d");
-  //   const { width, height } = dimensions;
-
-  //   canvas.width = width;
-  //   canvas.height = height;
-
-  //   // Clear canvas
-  //   ctx.clearRect(0, 0, width, height);
-
-  //   // Apply zoom and pan transformations
-  //   ctx.save();
-  //   ctx.scale(zoomLevel, zoomLevel);
-  //   ctx.translate(
-  //     (width / 2 + svgOffset.x) / zoomLevel,
-  //     (height / 2 + svgOffset.y) / zoomLevel
-  //   );
-
-  //   // Simple bubble rendering for performance
-  //   ctx.fillStyle = "#bf574f";
-  //   ctx.globalAlpha = 0.7;
-
-  //   filteredData.forEach((item) => {
-  //     // Simple positioning - you can make this more sophisticated
-  //     const x = ((item.year - 1957) / (2024 - 1957)) * width - width / 2;
-  //     const y = Math.random() * height - height / 2;
-  //     const radius = 3;
-
-  //     ctx.beginPath();
-  //     ctx.arc(x, y, radius, 0, 2 * Math.PI);
-  //     ctx.fill();
-  //   });
-
-  //   ctx.restore();
-  //   ctx.globalAlpha = 1.0;
-  // }, [filteredData, dimensions, svgOffset, zoomLevel]);
-
-  // // Handle canvas re-rendering when zoom or offset changes
-  // useEffect(() => {
-  //   if (useCanvas && !d3ZoomActive) {
-  //     renderCanvas();
-  //   }
-  //   // If D3 zoom is active, don't let canvas re-rendering interfere
-  // }, [useCanvas, svgOffset, zoomLevel, renderCanvas, d3ZoomActive]);
-
-  // Auto-switch to canvas for very large datasets
-  useEffect(() => {
-    if (filteredData.length > 20000 && !useCanvas) {
-      // console.log('Large dataset detected, switching to canvas rendering');
-      setUseCanvas(true);
-    } else if (filteredData.length <= 10000 && useCanvas) {
-      // console.log('Dataset size reduced, switching back to SVG');
-      setUseCanvas(false);
-    }
-  }, [filteredData.length, useCanvas]);
 
   // Debounced filter change handler
   const debouncedFilterChange = useCallback(
@@ -1351,7 +1329,6 @@ const BubbleChart = () => {
       endGame,
       resetFilters,
       filteredData.length,
-      useCanvas,
     ]
   );
 
@@ -1533,21 +1510,7 @@ const BubbleChart = () => {
           </div>
         )} */}
 
-        {useCanvas ? (
-          <canvas
-            ref={canvasRef}
-            width="100%"
-            height="100%"
-            style={{
-              userSelect: "none",
-              WebkitUserSelect: "none",
-              MozUserSelect: "none",
-              msUserSelect: "none",
-            }}
-            onContextMenu={(e) => e.preventDefault()}
-          />
-        ) : (
-          <svg
+        <svg
             ref={svgRef}
             className="groups-svg"
             width="100%"
@@ -1560,7 +1523,6 @@ const BubbleChart = () => {
             }}
             onContextMenu={(e) => e.preventDefault()}
           />
-        )}
 
         {/*isZooming && (
           <div style={{
