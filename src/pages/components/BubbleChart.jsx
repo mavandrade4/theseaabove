@@ -967,8 +967,8 @@ const BubbleChart = () => {
       const screenHeight = dimensions.height;
       
       // Calculate optimal zoom level based on bubble size and screen size
-      // We want the bubble to take up about 1/3 of the screen (not too big, not too small)
-      const targetBubbleScreenSize = Math.min(screenWidth, screenHeight) / 3;
+      // We want the bubble to take up about 2/3 of the screen for good visibility
+      const targetBubbleScreenSize = Math.min(screenWidth, screenHeight) * 0.6;
       const optimalZoom = targetBubbleScreenSize / (d.r * 2); // d.r is radius, so diameter is d.r * 2
       
       // Clamp zoom level to reasonable bounds
@@ -983,10 +983,12 @@ const BubbleChart = () => {
       console.log("Smart bubble focusing:", {
         bubble: { x: d.x, y: d.y, r: d.r, diameter: d.r * 2 },
         screen: { width: screenWidth, height: screenHeight },
+        screenCenter: { x: screenWidth/2, y: screenHeight/2 },
         targetBubbleScreenSize,
         optimalZoom,
         clampedZoom,
-        targetDiameter
+        targetDiameter,
+        zoomToCall: `zoomTo([${d.x}, ${d.y}, ${targetDiameter}])`
       });
       
       // Set flag to prevent manual transform interference
@@ -998,6 +1000,7 @@ const BubbleChart = () => {
       
       // Use the zoomTo function to center and zoom to the bubble
       // This will center the bubble at (d.x, d.y) with the target diameter
+      // The zoomTo function centers the view at the first two coordinates
       zoomTo([d.x, d.y, targetDiameter]);
       
       // Update the focus branch
