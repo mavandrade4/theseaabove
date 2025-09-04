@@ -493,19 +493,31 @@ const BubbleChart = () => {
       const centerX = dimensions.width / 2;
       const centerY = dimensions.height / 2;
 
-      // Calculate the current mouse position in the data coordinate system
-      const dataX = (mouseX - centerX - svgOffset.x) / zoomLevel;
-      const dataY = (mouseY - centerY - svgOffset.y) / zoomLevel;
+      // More intuitive cursor-centered zoom approach
+      // We want the point under the cursor to stay under the cursor after zoom
+      
+      // Convert cursor position to chart coordinates
+      // Our transform is: scale(zoom) translate(offset.x/zoom, offset.y/zoom)
+      // So a screen point (mouseX, mouseY) maps to chart point:
+      const currentCursorInChart = {
+        x: (mouseX - svgOffset.x) / zoomLevel,
+        y: (mouseY - svgOffset.y) / zoomLevel
+      };
+      
+      // After zoom, we want that same chart point to be under the cursor
+      // mouseX = currentCursorInChart.x * newZoom + newOffset.x
+      // Solving: newOffset.x = mouseX - currentCursorInChart.x * newZoom
+      const newOffsetX = mouseX - currentCursorInChart.x * newZoom;
+      const newOffsetY = mouseY - currentCursorInChart.y * newZoom;
 
-      // Calculate new offset to keep the mouse over the same data point
-      const newOffsetX = mouseX - centerX - dataX * newZoom;
-      const newOffsetY = mouseY - centerY - dataY * newZoom;
-
-      console.log("Updating zoom and offset:", {
+      console.log("Cursor-centered zoom:", {
+        mousePos: { x: mouseX, y: mouseY },
+        center: { x: centerX, y: centerY },
+        currentCursorInChart,
+        oldZoom: zoomLevel,
         newZoom,
-        newOffsetX,
-        newOffsetY,
-        svgOffset
+        oldOffset: svgOffset,
+        newOffset: { x: newOffsetX, y: newOffsetY }
       });
 
       // Update both zoom and offset
