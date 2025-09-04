@@ -318,15 +318,11 @@ const App = () => {
             <div className="card-content">
               <h3>VISUALIZATION</h3>
               <p>
-                Explore interactive data visualizations that reveal what's
-                really orbiting our planet.
+                Find out more about the data behind our visualizations, including the sources, how we process it, and the challenges.
               </p>
               <div className="card-buttons">
-                <Link className="buttons" to="/timeline">
-                  Timeline
-                </Link>
-                <Link className="buttons" to="/groups">
-                  Space Hunt
+                <Link className="buttons" to="/project">
+                  Data
                 </Link>
               </div>
             </div>

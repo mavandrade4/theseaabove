@@ -217,7 +217,7 @@ const Project = () => {
             />
             <h1 className="hero-title">
               <span className="title-accent">THE SEA ABOVE:</span> <br />
-              The Project
+              The Data
             </h1>
           </div>
           <p className="hero-subtitle">
